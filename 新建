@@ -1,0 +1,535 @@
+
+
+fatal error: sys/cdefs.h: 没有那个文件或目录
+sudo find / -name "cdefs.h"
+sudo nano /usr/include/features.h
+/usr/include/arm-linux-gnueabihf/sys/cdefs.h
+
+
+
+fatal error: bits/wordsize.h: 没有那个文件或目录
+sudo find / -name "wordsize.h"
+
+
+
+sudo nano /usr/include/arm-linux-gnueabihf/sys/cdefs.h
+
+/usr/include/arm-linux-gnueabihf/bits/wordsize.h
+
+
+
+sudo find / -name "stubs-soft.h"
+/usr/include/arm-linux-gnueabihf/gnu/stubs.h
+
+
+
+
+sudo apt-get install build-essential g++ gcc gcc-multilib libtool flex bison gcc-doc
+
+apt命令用法编辑
+packagename指代为软件包的名称。
+apt-get update
+在修改/etc/apt/sources.list或/etc/apt/preferences之后运行该命令。此外您需要定期运行这一命令以确保您的软件包列表是最新的。
+apt-get install packagename
+安装一个新软件包（参见下文的aptitude）
+apt-get remove packagename
+卸载一个已安装的软件包（保留配置文档）
+apt-get remove --purge packagename
+卸载一个已安装的软件包（删除配置文档）
+apt-get autoremove packagename
+删除包及其依赖的软件包
+apt-get autoremove --purge packagname
+删除包及其依赖的软件包+配置文件，比上面的要删除的彻底一点
+dpkg --force-all --purge packagename
+有些软件很难卸载，而且还阻止了别的软件的应用，就能够用这个，但是有点冒险。
+apt-get autoclean
+apt会把已装或已卸的软件都备份在硬盘上，所以假如需要空间的话，能够让这个命令来删除您已卸载掉的软件的备份。
+apt-get clean
+这个命令会把安装的软件的备份也删除，但是这样不会影响软件的使用。
+apt-get upgrade
+可以使用这条命令更新软件包，apt-get upgrade不仅可以从相同版本号的发布版中更新软件包，也可以从新版本号的发布版中更新软件包，尽管实现后一种更新的推荐命令为apt-get dist-upgrade。
+在运行apt-get upgrade命令时加上-u选项很有用（即：apt-get -u upgrade)。这个选项让APT显示完整的可更新软件包列表。不加这个选项，你就只能盲目地更新。APT会下载每个软件包的最新更新版本，然后以合理的次序安装它们。注意在运行该命令前应先运行 apt-get update更新数据库，更新任何已安装的软件包。 [2] 
+apt-get dist-upgrade
+将系统升级到新版本。
+apt-cache search string
+在软件包列表中搜索字符串。
+
+
+
+
+wget -chttp://www.airspayce.com/mikem/bcm2835/bcm2835-1.60.tar.gz
+tar zxvf bcm2835-1.60.tar.gz
+cd bcm2835-1.60
+./configure
+make -j4
+sudo make check
+sudo make install
+
+
+ccl
+
+? (open-shared-library "/usr/lib/libpigpio.so")
+
+? (maphash #'(lambda (k v) (format t "~a => ~a~%" k v)) ccl::*eeps*)
+
+? (external "gpioSetMode")
+#<EXTERNAL-ENTRY-POINT "gpioSetMode" (#x7671709C) /usr/lib/libpigpio.so #x14840246>
+? (external "wiringPiSetup")
+#<EXTERNAL-ENTRY-POINT "wiringPiSetup" {unresolved}  #x14901126>
+(external-call "gpioSetMode" :void nil :signed-byte)
+
+
+
+
+(let ((in (open "/sys/class/gpio/export" :direction :output :if-exists :overwrite)))
+(format in "13")
+(close in))
+
+
+(let ((in (open "/sys/class/gpio/gpio13/direction" :direction :output :if-exists :overwrite)))
+(format in "out")
+(close in))
+
+(let ((in (open "/sys/class/gpio/gpio13/value" :direction :output :if-exists :overwrite)))
+(format in "1")
+(close in))
+
+(let ((in (open "/sys/class/gpio/unexport" :direction :output :if-exists :overwrite)))
+(format in "13")
+(close in))
+
+
+pi@raspberrypi:/usr/lib $ nm -D libpigpio.so
+         U accept
+0004b4cc D alert_delays
+00018b34 T bbI2CClose
+00018768 T bbI2COpen
+0002674c T bbI2CZip
+00019b08 T bbSPIClose
+00019444 T bbSPIOpen
+00019df0 T bbSPIXfer
+         U bind
+00018d88 T bscInit
+00018df8 T bscTerm
+00018e5c T bscXfer
+000de0c0 B __bss_end__
+000de0c0 B _bss_end__
+0004bf80 B __bss_start
+0004bf80 B __bss_start__
+         U calloc
+         U cfmakeraw
+         U cfsetispeed
+         U cfsetospeed
+         U chmod
+         U clock_gettime
+         U clock_nanosleep
+         U close
+00032d54 T cmdErrStr
+0004b510 D cmdInfo
+0002fa0c T cmdParse
+00032db8 T cmdParseScript
+0002f9fc T cmdStr
+0004b50c D cmdUsage
+         U __ctype_b_loc
+         U __ctype_toupper_loc
+         U __cxa_atexit
+         w __cxa_finalize
+0004bf80 D _edata
+000de0c0 B _end
+000de0c0 B __end__
+         U __errno_location
+0001b65c T eventMonitor
+0001b0a8 T eventSetFunc
+0001b380 T eventSetFuncEx
+0001b8c8 T eventTrigger
+         U exit
+         U fclose
+         U fcntl
+         U feof
+         U fflush
+         U fgets
+00023bec T fileApprove
+00024390 T fileClose
+00024f6c T fileList
+         U fileno
+00023dbc T fileOpen
+0002499c T fileRead
+00024cc4 T fileSeek
+00024620 T fileWrite
+00033898 T _fini
+         U flock
+         U fnmatch
+         U fopen
+         U fprintf
+         U fputc
+         U free
+         U fwrite
+00010768 T getBitInBytes
+         U getenv
+         U getpid
+         U gettimeofday
+         U glob
+         U globfree
+         w __gmon_start__
+0002aa94 T gpioCfgBufferSize
+0002ac8c T gpioCfgClock
+0002af40 T gpioCfgDMAchannel
+0002b12c T gpioCfgDMAchannels
+0002bce8 T gpioCfgGetInternals
+0002b534 T gpioCfgInterfaces
+0002bd28 T gpioCfgInternals
+0002b910 T gpioCfgMemAlloc
+0002bafc T gpioCfgNetAddr
+0002b394 T gpioCfgPermissions
+0002bcfc T gpioCfgSetInternals
+0002b720 T gpioCfgSocketPort
+0002c03c T gpioCustom1
+0002c2c0 T gpioCustom2
+0002574c T gpioDelay
+00021150 T gpioDeleteScript
+0001143c T gpioGetMode
+000236e8 T gpioGetPad
+00012138 T gpioGetPWMdutycycle
+00012e08 T gpioGetPWMfrequency
+000126fc T gpioGetPWMrange
+000128f8 T gpioGetPWMrealRange
+000133b8 T gpioGetServoPulsewidth
+00021a54 T gpioGlitchFilter
+00022584 T gpioHardwareClock
+00022db0 T gpioHardwarePWM
+00027790 T gpioHardwareRevision
+0002a90c T gpioInitialise
+0001d76c T gpioNoiseFilter
+0001c448 T gpioNotifyBegin
+0001c9e4 T gpioNotifyClose
+0002613c T gpioNotifyOpen
+00025ab4 T gpioNotifyOpenWithSize
+0001c718 T gpioNotifyPause
+00011e68 T gpioPWM
+000118e4 T gpioRead
+00021870 T gpioRead_Bits_0_31
+00021d58 T gpioRead_Bits_32_53
+000209a4 T gpioRunScript
+00020c94 T gpioScriptStatus
+0001add0 T gpioSerialRead
+0001d498 T gpioSerialReadClose
+0001ab18 T gpioSerialReadInvert
+0001bde4 T gpioSerialReadOpen
+0001305c T gpioServo
+0001bac4 T gpioSetAlertFunc
+0001c138 T gpioSetAlertFuncEx
+0001da24 T gpioSetGetSamplesFunc
+0001dbf0 T gpioSetGetSamplesFuncEx
+0001f1c8 T gpioSetISRFunc
+00020424 T gpioSetISRFuncEx
+0001109c T gpioSetMode
+00023480 T gpioSetPad
+00011644 T gpioSetPullUpDown
+00012b3c T gpioSetPWMfrequency
+0001241c T gpioSetPWMrange
+0002145c T gpioSetSignalFunc
+00021664 T gpioSetSignalFuncEx
+0001ddc0 T gpioSetTimerFunc
+0001e374 T gpioSetTimerFuncEx
+0001cf58 T gpioSetWatchdog
+0002547c T gpioSleep
+0001e938 T gpioStartThread
+00020f10 T gpioStopScript
+0001eba4 T gpioStopThread
+000206a4 T gpioStoreScript
+0001fd90 T gpioTerminate
+0002598c T gpioTick
+00025200 T gpioTime
+0001ccb0 T gpioTrigger
+00027688 T gpioVersion
+00013984 T gpioWaveAddGeneric
+000137e0 T gpioWaveAddNew
+00013c34 T gpioWaveAddSerial
+00015e40 T gpioWaveChain
+00013610 T gpioWaveClear
+0001494c T gpioWaveCreate
+0001546c T gpioWaveDelete
+000182f8 T gpioWaveGetCbs
+00018470 T gpioWaveGetHighCbs
+00017b80 T gpioWaveGetHighMicros
+00018000 T gpioWaveGetHighPulses
+000185e8 T gpioWaveGetMaxCbs
+00017d00 T gpioWaveGetMaxMicros
+00018178 T gpioWaveGetMaxPulses
+00017a00 T gpioWaveGetMicros
+00017e80 T gpioWaveGetPulses
+000175f8 T gpioWaveTxAt
+0001746c T gpioWaveTxBusy
+000158e4 T gpioWaveTxSend
+00015714 T gpioWaveTxStart
+00017868 T gpioWaveTxStop
+00011ae4 T gpioWrite
+00021f3c T gpioWrite_Bits_0_31_Clear
+00022264 T gpioWrite_Bits_0_31_Set
+000220d0 T gpioWrite_Bits_32_53_Clear
+000223f0 T gpioWrite_Bits_32_53_Set
+0000bc38 T i2cBlockProcessCall
+0000d1b8 T i2cClose
+0000cda0 T i2cOpen
+0000b16c T i2cProcessCall
+0000b4f8 T i2cReadBlockData
+00009e5c T i2cReadByte
+0000a414 T i2cReadByteData
+0000cafc T i2cReadDevice
+0000c058 T i2cReadI2CBlockData
+0000aabc T i2cReadWordData
+0000d594 T i2cSegments
+0000d434 T i2cSwitchCombined
+0000b848 T i2cWriteBlockData
+0000a11c T i2cWriteByte
+0000a734 T i2cWriteByteData
+0000c810 T i2cWriteDevice
+0000c420 T i2cWriteI2CBlockData
+00009b64 T i2cWriteQuick
+0000ade0 T i2cWriteWordData
+0000d84c T i2cZip
+         U in6addr_any
+         U in6addr_loopback
+00003c48 T _init
+00027f18 T initInitialise
+         U ioctl
+         U __isoc99_sscanf
+         w _ITM_deregisterTMCloneTable
+         w _ITM_registerTMCloneTable
+         w _Jv_RegisterClasses
+         U kill
+         U listen
+         U localtime_r
+         U lseek
+         U malloc
+         U memchr
+         U memcpy
+         U memmove
+         U memset
+         U mkfifo
+         U mmap
+         U munmap
+00009738 T myPathBad
+000096dc T myScriptNameValid
+         U nanosleep
+         U open
+         U poll
+         U pthread_attr_init
+         U pthread_attr_setdetachstate
+         U pthread_attr_setstacksize
+         U pthread_cancel
+         U pthread_cond_init
+         U pthread_cond_signal
+         U pthread_cond_wait
+         U pthread_create
+         U pthread_exit
+         U pthread_join
+         U pthread_kill
+         U pthread_mutex_init
+         U pthread_mutex_lock
+         U pthread_mutex_unlock
+         U pthread_self
+000107ac T putBitInBytes
+         U raise
+00010f0c T rawDumpScript
+00010e58 T rawDumpWave
+00009844 T rawWaveAddGeneric
+000143e8 T rawWaveAddSPI
+000106dc T rawWaveCB
+00009808 T rawWaveCBAdr
+00010944 T rawWaveGetIn
+000107ec T rawWaveGetOOL
+00010898 T rawWaveGetOut
+000109f8 T rawWaveInfo
+000109a0 T rawWaveSetIn
+00010844 T rawWaveSetOOL
+000108f0 T rawWaveSetOut
+         U read
+         U recv
+         U sched_get_priority_max
+         U sched_setscheduler
+0000fa58 T serClose
+0001047c T serDataAvailable
+0000f41c T serOpen
+00010224 T serRead
+0000ff94 T serReadByte
+00010b88 T serWrite
+0000fcd4 T serWriteByte
+         U setsockopt
+000238e8 T shell
+         U sigaction
+         U snprintf
+         U socket
+0000e058 T spiClose
+000278b0 T spiOpen
+0000e4d0 T spiRead
+0000e9cc T spiWrite
+0000eeb4 T spiXfer
+         U sprintf
+         U sscanf
+         U __stack_chk_fail
+         U __stack_chk_guard
+         U stderr
+         U strcasecmp
+         U strchr
+         U strcpy
+         U strerror
+         U strftime
+         U strlen
+         U strncasecmp
+         U strncmp
+         U strstr
+         U strtol
+         U system
+         U tcflush
+         U tcgetattr
+         U tcsetattr
+00010ad8 T time_sleep
+00010a60 T time_time
+         U unlink
+         U usleep
+         U write
+         U __xmknod
+         U __xstat
+
+
+pi@raspberrypi:/usr/local/lib $ ar -t libbcm2835.a
+pi@raspberrypi:/usr/local/lib $ nm libbcm2835.a
+
+bcm2835.o:
+         U __aeabi_uidiv
+00000028 D bcm2835_aux
+00000ef0 T bcm2835_aux_spi_begin
+00001008 T bcm2835_aux_spi_CalcClockDivider
+00000fa8 T bcm2835_aux_spi_end
+00001074 T bcm2835_aux_spi_setClockDivider
+000013d8 T bcm2835_aux_spi_transfern
+000011e4 T bcm2835_aux_spi_transfernb
+00001084 T bcm2835_aux_spi_write
+000010ec T bcm2835_aux_spi_writenb
+0000001c D bcm2835_bsc0
+00000020 D bcm2835_bsc1
+00000000 r bcm2835_byte_reverse_table
+00000010 D bcm2835_clk
+00002700 T bcm2835_close
+00000000 t bcm2835_close.part.3
+000006e0 T bcm2835_delay
+00001a50 T bcm2835_delayMicroseconds
+00000008 D bcm2835_gpio
+0000061c T bcm2835_gpio_afen
+000005c4 T bcm2835_gpio_aren
+00000330 T bcm2835_gpio_clr
+00000648 T bcm2835_gpio_clr_afen
+000005f0 T bcm2835_gpio_clr_aren
+000004e8 T bcm2835_gpio_clr_fen
+00000540 T bcm2835_gpio_clr_hen
+00000598 T bcm2835_gpio_clr_len
+00000370 T bcm2835_gpio_clr_multi
+00000490 T bcm2835_gpio_clr_ren
+000003c4 T bcm2835_gpio_eds
+00000400 T bcm2835_gpio_eds_multi
+000004bc T bcm2835_gpio_fen
+000002bc T bcm2835_gpio_fsel
+000007a0 T bcm2835_gpio_get_pud
+00000514 T bcm2835_gpio_hen
+0000056c T bcm2835_gpio_len
+00000388 T bcm2835_gpio_lev
+00000694 T bcm2835_gpio_pad
+00000674 T bcm2835_gpio_pud
+00001c44 T bcm2835_gpio_pudclk
+00000248 t bcm2835_gpio_pud.part.1
+00000464 T bcm2835_gpio_ren
+00000308 T bcm2835_gpio_set
+00000424 T bcm2835_gpio_set_eds
+0000044c T bcm2835_gpio_set_eds_multi
+00000358 T bcm2835_gpio_set_multi
+000006bc T bcm2835_gpio_set_pad
+00001b28 T bcm2835_gpio_set_pud
+00000730 T bcm2835_gpio_write
+00000768 T bcm2835_gpio_write_mask
+00000740 T bcm2835_gpio_write_multi
+000013e4 T bcm2835_i2c_begin
+00001488 T bcm2835_i2c_end
+000016f4 T bcm2835_i2c_read
+00001c98 T bcm2835_i2c_read_register_rs
+00001538 T bcm2835_i2c_set_baudrate
+000014d0 T bcm2835_i2c_setClockDivider
+000014b8 T bcm2835_i2c_setSlaveAddress
+00001560 T bcm2835_i2c_write
+00001e6c T bcm2835_i2c_write_read_rs
+00002414 T bcm2835_init
+00000014 D bcm2835_pads
+00000000 D bcm2835_peripherals
+00000034 D bcm2835_peripherals_base
+00000004 D bcm2835_peripherals_size
+00000198 T bcm2835_peri_read
+000001d8 T bcm2835_peri_read_nb
+00000290 T bcm2835_peri_set_bits
+00000210 T bcm2835_peri_write
+00000260 T bcm2835_peri_write_nb
+0000000c D bcm2835_pwm
+00002148 T bcm2835_pwm_set_clock
+0000234c T bcm2835_pwm_set_data
+00002210 T bcm2835_pwm_set_mode
+000022c4 T bcm2835_pwm_set_range
+000000cc T bcm2835_regbase
+0000017c T bcm2835_set_debug
+00000018 D bcm2835_spi0
+0000002c D bcm2835_spi1
+00000838 T bcm2835_spi_begin
+00000030 d bcm2835_spi_bit_order
+00000dd0 T bcm2835_spi_chipSelect
+00000900 T bcm2835_spi_end
+00000968 T bcm2835_spi_setBitOrder
+00000de8 T bcm2835_spi_setChipSelectPolarity
+00000978 T bcm2835_spi_setClockDivider
+000009c8 T bcm2835_spi_setDataMode
+00000990 T bcm2835_spi_set_speed_hz
+000009e0 T bcm2835_spi_transfer
+00000dc4 T bcm2835_spi_transfern
+00000ad0 T bcm2835_spi_transfernb
+00000e0c T bcm2835_spi_write
+00000c70 T bcm2835_spi_writenb
+00000024 D bcm2835_st
+00002128 T bcm2835_st_delay
+000019b0 T bcm2835_st_read
+0000018c T bcm2835_version
+         U close
+00000000 b debug
+         U __errno_location
+         U fclose
+         U fopen
+         U fprintf
+         U fread
+         U geteuid
+00000008 b i2c_byte_wait_us
+000023d4 T malloc_aligned
+00000054 t mapmem.constprop.4
+         U mmap
+         U munmap
+         U nanosleep
+         U open
+         U posix_memalign
+         U printf
+00000002 b pud_compat_setting
+00000001 b pud_type_rpi4
+00000004 b spi1_speed
+         U stderr
+         U strerror
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

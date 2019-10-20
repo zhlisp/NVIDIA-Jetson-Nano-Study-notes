@@ -1,0 +1,1537 @@
+# 先安装拼音，然后添加拼音，删除软件商店里的拼音，最后在语言设置里删除再添加拼音
+@ 设置输入法开机启动 可不设置
+@ 要想实现自动启动需要在$HOME/.bashrc
+export GTK_IM_MODULE=ibus
+export QT_IM_MODULE=ibus
+export XIM_PROGRAM="ibus-daemon"
+export XMODIFIERS=@im=ibus
+@
+
+
+@ 进和apt源地址更新为阿里源,不建议替换源
+cd /etc/apt
+@ 备份系统原来的文件
+sudo mv sources.list sources.list_bak
+@ 新建命令脚本文件，用于自动区配源地址
+sudo vim apt.sh
+
+@ 按a输入模式
+Codename=$( (lsb_release -a)|awk '{print $2}'|tail -n 1 )
+echo "\
+deb http://mirrors.aliyun.com/ubuntu/ $Codename main multiverse restricted universe
+deb http://mirrors.aliyun.com/ubuntu/ $Codename-backports main multiverse restricted universe
+deb http://mirrors.aliyun.com/ubuntu/ $Codename-proposed main multiverse restricted universe
+deb http://mirrors.aliyun.com/ubuntu/ $Codename-security main multiverse restricted universe
+deb http://mirrors.aliyun.com/ubuntu/ $Codename-updates main multiverse restricted universe
+deb-src http://mirrors.aliyun.com/ubuntu/ $Codename main multiverse restricted universe
+deb-src http://mirrors.aliyun.com/ubuntu/ $Codename-backports main multiverse restricted universe
+deb-src http://mirrors.aliyun.com/ubuntu/ $Codename-proposed main multiverse restricted universe
+deb-src http://mirrors.aliyun.com/ubuntu/ $Codename-security main multiverse restricted universe
+deb-src http://mirrors.aliyun.com/ubuntu/ $Codename-updates main multiverse restricted universe ">sources.list
+apt-get update
+@ 按esc命令模式，输入:wq保存退出
+
+@ 下面的gcc建议不要安装
+远程 origin 已经存在错误解决方法
+方法一：添加新的名称：
+git remote add newname https://github.com/luodao236/onceAgain.git
+最后提交提交代码的命令为
+git push newname master
+
+方法二：修改origin 指向地址
+git remote set-url origin https://github.com/luodao236/onceAgain.git
+最后的提交代码的方式不变还是
+git push origin master
+@
+
+下载源码
+
+要使用git，需要公共存储库的本地克隆。这接近于svn checkout，但是克隆会使用完整的历史记录复制存储库。因此，可以在没有互联网连接的情况下执行诸如“git log”，“git status”，“git diff”，“git blame”之类的命令。
+
+首先，创建克隆。使用普通的git存储库'git clone'可以获取所有分支，但由于SVN镜像，我们需要做更精细的事情：
+
+
+mkdir gcc; cd gcc
+git init
+# 默认拔出所有头（trunk，release branches，git-only branches，其他几个SVN分支）
+git remote add origin git://gcc.gnu.org/git/gcc.git
+# 还包括所有其他SVN分支（增加约0.2GB）
+git config --add remote.origin.fetch 'refs/remotes/*:refs/remotes/svn/*'
+git fetch
+git checkout -b trunk svn/trunk
+
+
+现在，存储库位于“gcc”目录中。尝试一些命令
+> cd gcc
+~/gcc> git status
+# 在树干上
+无需提交（工作目录清理）
+
+
+从官方svn-mirror存储库获取更改到本地存储库
+git pull --rebase
+
+
+检查对本地存储库的更改
+git commit -a
+
+
+提取要提交的补丁
+# 显示此分支上不在上游分支上的所有更改，从最早到最晚
+git log -p --reverse @{u}..
+
+
+在树枝上
+我们的克隆包含所有gcc分支。
+
+列出可用的分支：
+~/gcc> git branch -a
+* trunk
+  remotes/origin/HEAD -> origin/trunk
+...
+  remotes/origin/gcc-4_9-branch
+  remotes/origin/jason/comdat-debug
+...
+  remotes/svn/gcc-4_9-branch
+  ...
+
+
+要使用其中一个分支，我们需要一个可以编辑的本地分支。
+~/gcc> git checkout -b gcc49 svn/gcc-4_9-branch
+分支gcc49设置为跟踪远程ref refs / remotes / gcc-4_9-branch。
+切换到新的分支'gcc49'
+
+
+这意味着“创建一个新的本地分支gcc49，它跟踪远程分支svn / gcc-4_9-branch”。然后你可以在分支之间切换
+~/gcc> git checkout trunk
+~/gcc> git checkout gcc49
+请注意，许多SVN分支也将在远程/原点，但最好引用remotes / svn中的版本，以便您的分支可以使用git-svn。
+
+还要注意像redhat / gcc-4_4-branch这样的子目录分支不能轻易地工作; 请参阅下文，了解如何处理这些分支机构。
+
+
+
+@ 以下步骤如果达到GLIBCXX_3.4.25可跳过
+# 老版本在：
+# /usr/include/c++/5/
+# 5.编译程序并执行
+# 发现以下错误
+# ./test: /usr/lib/x86_64-linux-gnu/libstdc++.so.6: version `GLIBCXX_3.4.22' not found (required by ./test)
+# 查看当前的GLIBC版本
+strings /usr/lib/x86_64-linux-gnu/libstdc++.so.6 | grep GLIBCXX
+# //最新只到了22
+# GLIBCXX_3.4.19
+# GLIBCXX_3.4.20
+# GLIBCXX_3.4.21
+# 下载libstdc++.so.6
+# 找到lib64stdc++6_9.1.0-1_i386.deb
+# http://ftp.de.debian.org/debian/pool/main/g/gcc-9/
+sudo wget http://ftp.de.debian.org/debian/pool/main/g/gcc-9/lib64stdc++6_9.1.0-1_i386.deb
+sudo ar -x lib64stdc++6_9.1.0-1_i386.deb
+sudo tar xvJf data.tar.xz
+cd ./usr/lib64/
+sudo mv libstdc++.so.6.0.26 /usr/lib/x86_64-linux-gnu/
+cd /usr/lib/x86_64-linux-gnu/
+# sudo rm libstdc++.so.6
+sudo mv libstdc++.so.6 libstdc++.so.6.bak
+sudo ln libstdc++.so.6.0.26 libstdc++.so.6
+@ 补充安装，条件合适可不装
+
+
+
+sudo nano /etc/profile
+export PATH="$PATH:/usr/include/arm-linux-gnueabihf"
+
+
+
+
+#在PATH中找到可执行文件程序的路径
+
+export PATH=$PATH:/usr/include/arm-linux-gnueabihf
+
+
+
+#gcc找到头文件的路径
+
+C_INCLUDE_PATH=/usr/include/arm-linux-gnueabihf
+
+export C_INCLUDE_PATH
+
+
+
+#g++找到头文件的路径
+
+CPLUS_INCLUDE_PATH=$CPLUS_INCLUDE_PATH:/usr/include/arm-linux-gnueabihf
+
+export CPLUS_INCLUDE_PATH
+
+
+
+#找到动态链接库的路径
+
+LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/include/arm-linux-gnueabihf
+
+export LD_LIBRARY_PATH
+
+
+
+#找到静态库的路径
+
+LIBRARY_PATH=$LIBRARY_PATH:/usr/include/arm-linux-gnueabihf
+
+export LIBRARY_PATH
+
+
+注意：等号前面不要加空格,否则可能出现 command not found。
+
+添加了上面的内容后，可以执行如下的命令：
+
+source /etc/profile或者source .bashrc(.bash_profile)来使修改的内容生效。
+
+
+gcc自动下载的组件
+2019-05-10 21:52:38 URL: ftp://gcc.gnu.org/pub/gcc/infrastructure/gmp-6.1.0.tar.bz2 [2383840] -> "./gmp-6.1.0.tar.bz2" [1]
+2019-05-10 21:52:45 URL: ftp://gcc.gnu.org/pub/gcc/infrastructure/mpfr-3.1.4.tar.bz2 [1279284] -> "./mpfr-3.1.4.tar.bz2" [1]
+2019-05-10 21:52:51 URL: ftp://gcc.gnu.org/pub/gcc/infrastructure/mpc-1.0.3.tar.gz [669925] -> "./mpc-1.0.3.tar.gz" [1]
+2019-05-10 21:52:57 URL: ftp://gcc.gnu.org/pub/gcc/infrastructure/isl-0.18.tar.bz2 [1658291] -> "./isl-0.18.tar.bz2" [1]
+gmp-6.1.0.tar.bz2: OK
+mpfr-3.1.4.tar.bz2: OK
+mpc-1.0.3.tar.gz: OK
+isl-0.18.tar.bz2: OK
+All prerequisites downloaded successfully.
+
+
+问题1：在输入第二个命令的时候出现报错：
+
+无法获得锁 /var/lib/dpkg/lock - open (11: 资源临时不可用)
+
+解决：
+其实这是因为有另外一个程序在运行，导致锁不可用。原因可能是上次运行更新或安装没有正常完成。解决办法是杀死此进程
+sudo rm /var/cache/apt/archives/lock
+sudo rm /var/lib/dpkg/lock
+
+问题2：下列软件包有未满足的依赖关系：
+gnome-core-devel : 依赖: gnome-platform-devel (= 1:3.8+4ubuntu3) 但是它将不会被安装
+依赖: libatspi2.0-dev (>= 2.4) 但是它将不会被安装
+依赖: libatkmm-1.6-dev (>= 2.4) 但是它将不会被安装
+依赖: libbrasero-media3-dev (>= 3.4) 但是它将不会被安装
+E: 无法修正错误，因为您要求某些软件包保持现状，就是它们破坏了软件包间的依赖关系。
+
+解决方法：
+
+打开 software & update，在 update 中 把 important security updates 和 Recommended updates 勾选上，再 sudo apt-get update。
+
+或者更改源：
+
+点击右上角的”搜索“图标，在搜索框中输入update，在显示的应用列表中，点击”Software&Updates（软件&更新）“。
+
+在弹出的”Software&Updates“窗口中，选择”Ubuntu Software“，你可以看到”Download from（下载源）“是”Server for United States(美国服务器)“。点击”Server for United States“下拉菜单，选择”Other...（其他）“。
+
+在弹出”Choose a Download Server（选择下载服务器）“窗口中向上拉，找到China（中国）,然后，选择中国的服务器，这里可以选择教育源，网易、阿里等等。（我在这里选的是163（网易）的），然后点击”Choose Server（选择服务）“按钮。
+
+解决ModuleNotFoundError: No module named 'numpy.core._multiarray_umath' 错误（20190201）
+出错解决方法：https://blog.csdn.net/weixin_41010198/article/details/86738635
+文章目录：
+一、错误原因分析
+二、解决方式
+调试了好久，网上给出的解决方式说可能是numpy的版本问题，但是我却如何也解决不了，后来分析了一下原因，问题解决。
+
+
+bug 虐我千百遍，我待bug如初恋。 骗人的啦，一定要多读书呀，孩子，骗子太多！！！
+
+一、错误原因分析
+程序和数据都是正确的，一开始也是可以正常运行的，后面服务器卡死，无法正常操作，就只能强制关机！，所以问题就是强制关机导致模型没有正确保存，因而导致了保存的模型破损，当再次重启的时候加载之前的模型就报了上面的错误！
+
+
+二、解决方式
+把之前的模型删除即可（如果有之前备份的模型放进去也可以）。
+
+其他相关错误解决方式：
+当然有人可能遇到的不是这个问题，那就请你自行升级一下numpy的版本，可能是因为你的numpy版本太低
+
+查看numpy的当前版本
+
+conda list numpy
+或
+pip show numpy
+1
+2
+3
+更新numpy的版本
+我执行的下面这行命令，更新后和博客上的结果一样正确了。
+ pip install --user --upgrade numpy   #将numpy更新到最新版本
+或者
+pip install --upgrade --force-reinstall numpy==1.17  #重新安装合适的numpy版本
+ 或
+ pip install numpy==1.17
+或
+pip  install -i https://pypi.tuna.tsinghua.edu.cn/simple --upgrade numpy
+
+可选解决方法是：卸载numpy，然后重新安装。
+pip uninstall numpy
+pip install numpy
+
+（3）安装TensorFlow GPU版本 
+
+pip3 install tensorflow-gpu
+或
+pip3 install --extra-index-url https://developer.download.nvidia.com/compute/redist/jp/v42/ tensorflow-gpu==1.13.1+nv19.3 --user
+经历了漫长的等待，下载过程中好几次断网了几次，不过终于安装成功了，没出什么异常。
+
+编译出错提示
+nvcc fatal   : Path to libdevice library not specified
+解决darknet编译中nvcc fatal : Path to libdevice library not specified问题
+尝试各种方法未果（添加cuda lib路径）
+最后使用一个暴力的方法，在编译文件里将nvcc换成nvcc原地址/usr/local/cuda-9.0/bin/nvcc
+NVCC=/usr/local/cuda-10.0/bin/nvcc
+编译成功
+
+
+手动安装
+git clone https://github.com/tensorflow/tensorflow
+cd ./tensorflow
+# git checkout v1.2.1
+./configure
+
+Ubuntu安装TensorFlow C++
+
+Ubuntu安装TensorFlow C++
+2019年02月27日 16:51:53 蓬莱道人 阅读数 820更多
+分类专栏： C++
+版权声明：本文为博主原创文章，遵循 CC 4.0 BY-SA 版权协议，转载请附上原文出处链接和本声明。
+本文链接：https://blog.csdn.net/MOU_IT/article/details/87976152
+本文参考TensorFlow官网的安装方法：https://www.tensorflow.org/install/source
+
+1、安装protobufcd protobuf-3.7.1/
+
+ 2、安装bazel
+
+3、下载TensorFlow源码   
+
+4、使用bazel编译TensorFlow，产生我们需要的库文件
+
+5、编译其它依赖项
+
+6、测试
+
+1、安装protobuf
+    protobuffer的GitHub官网在这里，安装protobuf要注意protobuf的版本要和TensorFlow的版本相对应，protobuf和tensorflow的版本对应信息在这里。安装过程如下：    
+
+wget https://github.com/protocolbuffers/protobuf/releases/download/v3.7.1/protobuf-cpp-3.7.1.tar.gz
+tar -xzvf protobuf-cpp-3.7.1.tar.gz
+sudo apt install automake libtool
+cd protobuf-3.7.1/
+./autogen.sh
+./configure
+make -j4
+sudo make install
+sudo ldconfig
+# sudo make uninstall 安装错版本后卸载指令
+protoc --version  # 查看protobuf版本
+  如果遇到报错：protoc: error while loading shared libraries: libprotoc.so.17: cannot open shared object file: No such file or directory，则：
+
+export LD_LIBRARY_PATH=/usr/local/lib/ 
+ 2、安装bazel
+   bazel是Google开源的一套编译构建工具，广泛应用于Google内部，包括TensorFlow项目。修改TensorFlow内部源码，需要使用bazel来编译，故有必要了解下bazel。bazel优点很多，主要有：
+
+      1）构建快。支持增量编译。对依赖关系进行了优化，从而支持并发执行；
+      2）可构建多种语言。bazel可用来构建Java、C++、Android、ios等很多语言和框架，并支持mac、windows、linux等不同平台；
+      3）可伸缩。可处理任意大小的代码库，可处理多个库，也可以处理单个库；
+      4）可扩展。使用bazel扩展语言可支持新语言和新平台。
+
+  官方的安装文档参考这里。安装bazel的主要步骤如下：
+
+  （1）第一种安装方式（这种方式只能安装最新版的bazel）：Using Bazel custom APT repository
+
+  Step 1: Install the JDK    
+
+sudo apt-get install openjdk-8-jdk
+ Step 2: Add Bazel distribution URI as a package source
+
+echo "deb [arch=amd64] http://storage.googleapis.com/bazel-apt stable jdk1.8" | sudo tee /etc/apt/sources.list.d/bazel.list
+curl https://bazel.build/bazel-release.pub.gpg | sudo apt-key add -
+Step 3: Install and update Bazel 
+
+sudo apt-get update && sudo apt-get install bazel
+    或者只更新bazel：
+
+sudo apt-get install --only-upgrade bazel
+（2）第二种安装方式（可以安装任何版本的bazel）： Installing using binary installer
+
+    因为bazel的版本要和TensorFlow的版本相对应，所以推荐第二种安装方式，具体的版本对应信息参考这里。
+
+Step 1: Install required packages
+
+sudo apt-get install pkg-config zip g++ zlib1g-dev unzip python
+Step 2: Download Bazel 
+
+   从bazel的GitHub仓库下载名为bazel-<version>-installer-linux-x86_64.sh的源码。
+
+Step 3: Run the installer
+
+chmod +x bazel-<version>-installer-linux-x86_64.sh
+./bazel-<version>-installer-linux-x86_64.sh --user
+   --user标记把bazel安装到$home/bin的文件夹中，并设置.bazelrc路径指向$home/.bazelrc 。
+
+Step 4: Set up your environment
+
+export PATH="$PATH:$HOME/bin"
+3、下载TensorFlow源码   
+git clone --recursive https://github.com/tensorflow/tensorflow.git
+cd tensorflow
+  TensorFlow的默认分支为maser开发分支，可以切换到一个release分支来进行编译：
+
+git checkout branch_name  # r1.9, r1.10, etc.
+4、使用bazel编译TensorFlow，产生我们需要的库文件
+（1）进入tensorflow文件夹中，首先进行项目配置：
+
+./configure      # 如果只需要配置cpu环境就一直回车
+   如果只需要配置cpu环境就一直回车。如果需要GPU的支持，可参考 TensorFlow官网 -> Build from source -> View sample configuration session 设置，主要是 Python 的路径、CUDA 和 CUDNN 的版本和路径以及显卡的计算能力。参考配置如下：  
+
+./configure
+You have bazel 0.15.0 installed.
+Please specify the location of python. [Default is /usr/bin/python]: /usr/bin/python2.7
+ 
+Found possible Python library paths:
+  /usr/local/lib/python2.7/dist-packages
+  /usr/lib/python2.7/dist-packages
+Please input the desired Python library path to use.  Default is [/usr/lib/python2.7/dist-packages]
+ 
+Do you wish to build TensorFlow with jemalloc as malloc support? [Y/n]:
+jemalloc as malloc support will be enabled for TensorFlow.
+ 
+Do you wish to build TensorFlow with Google Cloud Platform support? [Y/n]:
+Google Cloud Platform support will be enabled for TensorFlow.
+ 
+Do you wish to build TensorFlow with Hadoop File System support? [Y/n]:
+Hadoop File System support will be enabled for TensorFlow.
+ 
+Do you wish to build TensorFlow with Amazon AWS Platform support? [Y/n]:
+Amazon AWS Platform support will be enabled for TensorFlow.
+ 
+Do you wish to build TensorFlow with Apache Kafka Platform support? [Y/n]:
+Apache Kafka Platform support will be enabled for TensorFlow.
+ 
+Do you wish to build TensorFlow with XLA JIT support? [y/N]:
+No XLA JIT support will be enabled for TensorFlow.
+ 
+Do you wish to build TensorFlow with GDR support? [y/N]:
+No GDR support will be enabled for TensorFlow.
+ 
+Do you wish to build TensorFlow with VERBS support? [y/N]:
+No VERBS support will be enabled for TensorFlow.
+ 
+Do you wish to build TensorFlow with OpenCL SYCL support? [y/N]:
+No OpenCL SYCL support will be enabled for TensorFlow.
+ 
+Do you wish to build TensorFlow with CUDA support? [y/N]: Y
+CUDA support will be enabled for TensorFlow.
+ 
+Please specify the CUDA SDK version you want to use. [Leave empty to default to CUDA 9.0]: 9.0
+ 
+Please specify the location where CUDA 9.0 toolkit is installed. Refer to README.md for more details. 
+[Default is /usr/local/cuda]:
+ 
+Please specify the cuDNN version you want to use. [Leave empty to default to cuDNN 7.0]: 7.0
+ 
+Please specify the location where cuDNN 7 library is installed. Refer to README.md for more details. 
+[Default is /usr/local/cuda]:
+ 
+Do you wish to build TensorFlow with TensorRT support? [y/N]:
+No TensorRT support will be enabled for TensorFlow.
+ 
+Please specify the NCCL version you want to use. If NCLL 2.2 is not installed, then you can use version 1.3 
+that can be fetched automatically but it may have worse performance with multiple GPUs. [Default is 2.2]: 1.3
+ 
+Please specify a list of comma-separated Cuda compute capabilities you want to build with.
+You can find the compute capability of your device at: https://developer.nvidia.com/cuda-gpus.
+Please note that each additional compute capability significantly increases your build time and binary size. 
+[Default is: 3.5,7.0] 6.1
+ 
+Do you want to use clang as CUDA compiler? [y/N]:
+nvcc will be used as CUDA compiler.
+ 
+Please specify which gcc should be used by nvcc as the host compiler. [Default is /usr/bin/gcc]:
+ 
+Do you wish to build TensorFlow with MPI support? [y/N]:
+No MPI support will be enabled for TensorFlow.
+ 
+Please specify optimization flags to use during compilation when bazel option "--config=opt" is 
+specified [Default is -march=native]:
+ 
+Would you like to interactively configure ./WORKSPACE for Android builds? [y/N]:
+Not configuring 
+the WORKSPACE for Android builds.
+ 
+Preconfigured Bazel build configs. You can use any of the below by adding "--config=<>" to your 
+build command. See tools/bazel.rc for more details.
+    --config=mkl            # Build with MKL support.
+    --config=monolithic     # Config for mostly static monolithic build.
+Configuration finished
+  （2）使用bazel编译TensorFlow：
+
+       如果只需要考虑CPU，则运行：     
+
+bazel build --config=opt //tensorflow:libtensorflow_cc.so
+       如果需要GPU支持，则运行：
+
+bazel build --config=opt --config=cuda //tensorflow:libtensorflow_cc.so
+      若在C++环境中需要使用opencv环境，建议使用以下指令编译：（若不使用该指令可能会遇到opencv imread图像失效问题，问题详情见链接） ：
+
+bazel build --config=monolithic //tensorflow:libtensorflow_cc.so
+    编译完成后，在bazel-bin/tensorflow中会生成两个我们需要的库文件：libtensorflow_cc.so 和 libtensorflow_framework.so。
+
+5、编译其它依赖项(主要是protobuf和eigen)
+   先前我们已经安装了protobuf，因此这里只需要安装eigen即可。
+
+# eigen
+./tensorflow/contrib/makefile/download_dependencies.sh
+cd tensorflow/contrib/makefile/downloads/eigen
+mkdir build
+cd build
+cmake ..
+make
+sudo make install
+     安装完毕后，在usr/local/include目录下会出现eigen3文件夹
+
+6、测试
+#include <tensorflow/core/platform/env.h>
+#include <tensorflow/core/public/session.h>
+#include <iostream>
+ 
+using namespace std;
+using namespace tensorflow;
+ 
+int main()
+{
+    Session* session;
+    Status status = NewSession(SessionOptions(), &session);
+    if (!status.ok()) {
+        cout << status.ToString() << "\n";
+        return 1;
+    }
+    cout << "Session successfully created.\n";
+}
+  把代码放在src文件夹下，编写cmakelist.txt，具体文件结构如下：
+
+├── src
+| └── hello.cpp
+| 
+├── CMakeLists.txt
+| 
+├── build
+    CMakeLists的文件内容为 
+
+cmake_minimum_required (VERSION 2.8.8)                       # 最低版本号
+project (tf_test)                                            # 工程名
+ 
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -std=c++11 -W")  # 指定编译器
+aux_source_directory(./src DIR_SRCS)                        # 将源码目录保存去变量中
+link_directories(path_to_tensorflow/tensorflow/bazel-bin/tensorflow)  # 动态链接库目录
+include_directories(                                        # 头文件的搜索目录
+   path_to_tensorflow/
+   path_to_tensorflow/bazel-genfiles
+   path_to_tensorflow/bazel-bin/tensorflow
+   path_to_tensorflow/tensorflow/contrib/makefile/downloads/absl
+   /usr/local/include/eigen3
+   ) 
+add_executable(tf_test  ${DIR_SRCS})                                # 从源文件编译出目标文件
+target_link_libraries(tf_test tensorflow_cc tensorflow_framework )  # 链接动态链接库
+接下来执行命令：
+
+cd build
+cmake ..
+make
+会生成一个tf_test可执行文件，执行无误即大功告成
+
+
+5. 测试TensorFlow 
+跑一段自己写的非线性回归代码，速度还是挺快的
+
+vim tensorflow.py
+# 写入下面的代码
+
+import tensorflow as tf
+import numpy as np
+import matplotlib.pyplot as plt
+ 
+x_data = np.linspace(-0.5, 0.5, 200)[:, np.newaxis]
+noise = np.random.normal(0, 0.02, x_data.shape)
+y_data = np.square(x_data) + noise
+ 
+x = tf.placeholder(tf.float32, [None, 1])
+y = tf.placeholder(tf.float32, [None, 1])
+ 
+# 输入层一个神经元，输出层一个神经元，中间10个
+# 第一层
+Weights_L1 = tf.Variable(tf.random.normal([1, 10]))
+Biases_L1 = tf.Variable(tf.zeros([1, 10]))
+Wx_plus_b_L1 = tf.matmul(x, Weights_L1) + Biases_L1
+L1 = tf.nn.tanh(Wx_plus_b_L1)
+ 
+# 第二层
+Weights_L2 = tf.Variable(tf.random.normal([10, 1]))
+Biases_L2 = tf.Variable(tf.zeros([1, 1]))
+Wx_plus_b_L2 = tf.matmul(L1, Weights_L2) + Biases_L2
+pred = tf.nn.tanh(Wx_plus_b_L2)
+ 
+# 损失函数
+loss = tf.reduce_mean(tf.square(y - pred))
+ 
+# 训练
+train = tf.train.GradientDescentOptimizer(0.1).minimize(loss)
+ 
+with tf.Session() as sess:
+    sess.run(tf.global_variables_initializer())
+    for i in range(2000):
+        sess.run(train, feed_dict={x: x_data, y: y_data})
+        print("第{0}次，loss = {1}".format(i, sess.run(loss,feed_dict={x: x_data, y: y_data})))
+    pred_vaule = sess.run(pred, feed_dict={x: x_data})
+    plt.figure()
+    plt.scatter(x_data, y_data)
+    plt.plot(x_data, pred_vaule, 'r-', lw=5)
+    plt.show()
+
+# 执行代码
+
+pip install tf_nightly
+
+python3 tensorflow.py
+
+
+
+# 不能用外网的方法
+版主 您的这里也提供一个不能科学上网的办法，就是编辑CMakePrebuild.sh。把里面带有从 nvidia.app.box.com里下载东西的都注释掉。然后去我的网盘下载，并拷贝到data/networks目录。网盘链接分享下好吗
+# https://pan.baidu.com/s/16rFmIRMzvcrskiaPonnOtQ 提取码：rtr4
+
+
+8. 资源不够时可选应对方案
+
+Nano的内存还是太小了，有时候需要swap扩一下内存.nano重启后，swap空间自动回收。
+
+# 先禁用以前的
+sudo swapoff /swapfile
+ 
+# 修改swap 空间的大小为4G
+sudo dd if=/dev/zero of=/swapfile bs=1M count=4096
+ 
+# 设置文件为“swap file”类型
+sudo mkswap /swapfile
+ 
+# 启用swapfile
+sudo swapon /swapfile
+
+
+玩转Jetson Nano（六）安装caffe2
+https://caffe2.ai/docs/getting-started.html?platform=ubuntu&configuration=compile
+安装
+欢迎来到Caffe2！立即开始深入学习，按照如何下载和安装Caffe2的分步指南。
+
+选择首选平台并安装类型。
+我们测试了最新的代码
+
+Ubuntu 14.04
+Ubuntu 16.04
+安装依赖项
+sudo apt update
+sudo apt install -y --no-install-recommends \
+      build-essential \
+      git \
+      libgoogle-glog-dev \
+      libgtest-dev \
+      libiomp-dev \
+      libleveldb-dev \
+      liblmdb-dev \
+      libopencv-dev \
+      libopenmpi-dev \
+      libsnappy-dev \
+      libprotobuf-dev \
+      openmpi-bin \
+      openmpi-doc \
+      protobuf-compiler \
+      python-dev \
+      python-pip                          
+pip install --user \
+      future \
+      numpy \
+      protobuf \
+      typing \
+      hypothesis
+pip install typing --user
+注意libgflags2是针对Ubuntu 14.04。libgflags-dev适用于Ubuntu 16.04。
+# for Ubuntu 16.04
+sudo apt install -y --no-install-recommends \
+      libgflags-dev \
+      cmake
+
+如果您有GPU，请在继续之前按照这些附加步骤操作。
+使用GPU支持安装
+
+克隆与构建
+git clone https://github.com/pytorch/pytorch.git && cd pytorch
+git submodule update --init --recursive
+cmake -DUSE_NCCL=OFF
+python3 setup.py install
+
+测试Caffe2安装＃
+运行此命令以查看您的Caffe2安装是否成功。
+cd ~ && python -c 'from caffe2.python import core' 2>/dev/null && echo "Success" || echo "Failure"
+
+
+
+
+源码编译caffe2
+
+# 复制caffe2（caffe2和pytorch合并了...嘻嘻嘻~）
+git clone --recursive https://github.com/pytorch/pytorch.git && cd pytorch 
+
+git submodule update --init 
+mkdir build && cd build
+
+# 安装caffe2
+cmake .. -DUSE_NCCL=OFF
+sudo make install -j4
+
+# 添加PYTHON环境变量
+vim ~/.bashrc
+export PYTHONPATH=/home/kaka/pytorch/build${PYTHONPATH:+:${PYTHONPATH}}
+
+如果失败，那么通过在主目录中运行from caffe2.python import corePython 然后在Python中运行来获得更好的错误消息。
+
+如果失败并显示有关未找到caffe2.python或未找到libcaffe2.so的消息，请参阅此信息，了解Caffe2如何在Python中安装。
+
+如果您安装了GPU支持，请使用此命令测试GPU构建是否成功（从顶级pytorch目录运行）。您将以任一方式获得测试输出，但如果使用CPU而不是GPU，它将在输出顶部警告您，以及其他错误，例如缺少库。
+
+python caffe2/python/operator_test/activation_ops_test.py
+
+删软件
+pip3 uninstall typing
+pip3 uninstall hypothesis
+装软件
+pip3 install typing --user
+pip3 install hypothesis --user
+
+
+pip show hypothesis
+hypothesis为提示少的库，下面为查看库信息，返回版本和路径代表已安装，没有代表未安装，用pip install 库名，安装就好。已安装还是报错，用下面命令添加环境变量。
+sudo vim /usr/local/lib/python3.6/python3_path.pth
+/home/love/.local/lib/python3.6/site-packages
+
+其它
+import sys
+sys.path.append("/home/love/.local/lib/python3.6/site-packages")
+使用GPU支持安装
+
+如果您计划仅使用GPU而不是CPU，那么您应该安装NVIDIA CUDA 8和cuDNN v5.1或v6.0，这是一个用于深度神经网络的GPU加速原语库。 NVIDIA的详细说明或者如果您感觉幸运，请尝试下面的快速安装命令集。
+
+首先更新您的显卡驱动程序！否则，您可能会遇到各种难以诊断的错误。
+对于Ubuntu 16.04
+sudo apt update && sudo apt install wget -y --no-install-recommends
+wget "https://developer.download.nvidia.cn/compute/cuda/repos/ubuntu1604/ppc64el/cuda-repo-ubuntu1604_10.0.130-1_ppc64el.deb"
+sudo dpkg -i cuda-repo-ubuntu1604_10.0.130-1_ppc64el.deb
+sudo apt update
+sudo apt install cuda
+
+安装cuDNN（所有Ubuntu版本）＃
+版本5.1
+CUDNN_URL="http://developer.download.nvidia.com/compute/redist/cudnn/v5.1/cudnn-8.0-linux-x64-v5.1.tgz"
+wget ${CUDNN_URL}
+sudo tar -xzf cudnn-8.0-linux-x64-v5.1.tgz -C /usr/local
+rm cudnn-8.0-linux-x64-v5.1.tgz && sudo ldconfig
+
+版本6.0 访问NVIDIA的cuDNN下载以注册和下载存档。按照上面相同的说明切换出更新的库。
+
+请注意，安装CUDA和CuDNN会使您的构建大小增加大约4GB，因此计划为您的Ubuntu磁盘大小至少12GB。
+
+设置教程和Jupyter服务器＃
+如果您在云计算机上运行此操作，则默认情况下您可能没有UI或方式来查看IPython笔记本。通常情况下，您可以在本地启动它们，ipython notebook然后您会看到一个localhost：8888网页，其中会显示正在运行的笔记本目录。以下示例将向您展示如何启动Jupyter服务器并通过SSH隧道远程连接。
+
+首先将云服务器配置为接受端口8889或任何您想要的端口，但在以下命令中更改端口。在AWS上，您可以通过向服务器的安全组添加规​​则来实现此目的，允许在端口8889上进行TCP入站。否则，您将为此调整iptables。
+
+接下来，启动Juypter服务器。
+jupyter notebook --no-browser --port=8889
+
+然后创建SSH隧道。这会将云服务器的Jupyter实例传递到localhost 8888端口，供您在本地使用。下面的示例是根据您如何连接AWS，your-public-cert.pem您自己的公共证书在哪里以及ubuntu@super-rad-GPU-instance.compute-1.amazonaws.com您登录云服务器的模板。您可以通过转到Instances> Connect并在之后复制零件ssh并在下面的命令中交换它，轻松地在AWS上获取此信息。
+
+ssh -N -f -L localhost:8888:localhost:8889 -i "your-public-cert.pem" ubuntu@super-rad-GPU-instance.compute-1.amazonaws.com
+
+
+2. 创建Swap交换空间，不用Swap我一次都没有成功过，但是禁用桌面后能不能成功我还没试过。而且Swap空间还不能设的太大，我有一次设了10G，系统直接无法启动，不知道是不是Swap的原因
+
+# 先禁用以前的
+sudo swapoff /swapfile
+ 
+# 修改swap 空间的大小为4G
+sudo dd if=/dev/zero of=/swapfile bs=1M count=4096
+ 
+# 设置文件为“swap file”类型
+sudo mkswap /swapfile
+ 
+# 启用swapfile
+sudo swapon /swapfile
+
+
+1. 安装pip
+因为Jetson Nano中已经安装了Python3.6版本，所以安装pip还是比较简单的
+
+sudo apt install python3-pip python3-dev
+安装后pip是9.01版本，需要把它升级到最新版，升级后pip版本为19.0.3。这里面升级后会有一个小Bug，需要手动改一下
+
+python3 -m pip install --upgrade pip  #升级pip
+sudo vim /usr/bin/pip3   #打开pip3文件
+将原来的
+
+from pip import main
+if __name__ == '__main__':
+    sys.exit(main())
+改成
+
+from pip import __main__
+if __name__ == '__main__':
+    sys.exit(__main__._main())
+
+修改结束后保存。运行pip3 -V成功后显示
+beckhans@Jetson:~$ pip3 -V
+pip 19.0.3 from /home/beckhans/.local/lib/python3.6/site-packages/pip (python 3.6)
+
+
+https://www.nvidia.cn/object/caffe-installation-cn.html
+
+如何在 NVIDIA GPU 上下载并安装
+运行 CAFFE 的系统要求
+Caffe 的 GPU 驱动版本具有以下要求：
+
+64 位 Linux（本指南针对 Ubuntu 14.04 编写）
+NVIDIA® CUDA® 7.5 ( NVIDIA Pascal™ GPU 要求使用 CUDA 8.0)
+cuDNN v5.1
+您还将需要支持计算功能的 NVIDIA GPU3.0 或更高版本。
+如何下载并安装 Caffe
+第 1 步：安装 CUDA
+要结合使用 Caffe 和 NVIDIA GPU，步要安装CUDA 工具包。
+
+第 2 步：安装 cuDNN
+安装 CUDA 工具包后，下载适用于 Linux 的cuDNN v5.1 库（请注意，您将需要注册加速计算开发人员计划）。
+
+下载后，解压缩文件并将其复制到 CUDA 工具包目录（此处假设在 /usr/local/cuda/ 中）：
+
+$ sudo tar -xvf cudnn-8.0-linux-x64-v5.1.tgz -C /usr/local
+
+以下是我编译 pycaffe 时出现的错误：
+
+python/caffe/_caffe.cpp:10:31: fatal error: numpy/arrayobject.h: 没有那个文件或目录
+
+解决方法：
+
+sudo apt install python-numpy
+
+此外也可能是由于 Makefile.config 文件中 python 路径设置错误出现的错误，可根据上一步检查一下，也可能出现别的错误，百度谷歌之～
+
+# ModuleNotFoundError: No module named 'skimage'
+查看skimage包安装的位置：在mac终端下输入：pip show scikit-image
+pip install scikit-image --user
+
+
+若不报错则表示 caffe 的 python 接口已正确编译，但是应该不会那么顺利，以下是我导入 caffe 时出现的错误：
+
+错误1：
+
+File "<stdin>", line 1, in <module>   ImportError: No module named caffe
+1
+解决方法：
+
+sudo echo export PYTHONPATH="~/caffe/python" >> ~/.bashrc
+
+source ~/.bashrc
+
+错误2：
+ImportError: No module named skimage.io
+解决方法：
+pip install -U scikit-image #若没有安装pip: sudo apt install python-pip
+
+
+准备图像数据库
+测试 Caffe 的训练性能需要使用图像数据库作为输入资源。Caffe 自带多个模型，可使用来自 ILSVRC12 挑战赛（“ImageNet”）的图像。原始图像文件可从 //image-net.org/download-images 下载（您将需要开通帐户并同意其条款）。下载原始图像文件并解压到您的系统中后，请继续执行以下步骤。假设原始图像以如下方式存储在您的磁盘中：
+
+/path/to/imagenet/train/n01440764/n01440764_10026.JPEG
+
+/path/to/imagenet/val/ILSVRC2012_val_00000001.JPEG
+第 6 步：下载辅助数据
+$ ./data/ilsvrc12/get_ilsvrc_aux.sh
+第 7 步：创建数据库
+首先从网上下载需要的数据集并解压到caffe同级目录下。下载地址，百度网盘：https://pan.baidu.com/s/1o77w1wI
+unzip image1000test200.zip
+cd caffe/examples
+mkdir myfile4
+cd myfile4/
+mkdir data
+cd data/
+cp -rf ../../../../image1000test200/train ./
+cp -rf ../../../../image1000test200/val ./
+
+cd ../../../
+
+在文本编辑器中打开文件 examples/imagenet/create_imagenet.sh，然后进行以下更改：
+vim ./examples/imagenet/create_imagenet.sh
+TRAIN_DATA_ROOT=./examples/myfile4/data/train/
+VAL_DATA_ROOT=./examples/myfile4/data/val/
+将变量 TRAIN_DATA_ROOT 和 VAL_DATA_ROOT 更改为您解压原始图像的路径。
+
+设置 RESIZE=true 以便在将图像添加到数据库之前将其调整到适当大小。
+
+保存并关闭文件。现在，您可以使用以下命令创建图像数据库了：
+./examples/imagenet/create_imagenet.sh
+
+然后，使用以下命令创建所需的图像均值文件：
+./examples/imagenet/make_imagenet_mean.sh
+
+
+
+
+
+
+首先从网上下载需要的数据集并解压。下载地址，百度网盘：https://pan.baidu.com/s/1o77w1wI
+cd examples
+mkdir myfile4
+cd myfile4/
+mkdir data
+cd data/
+cp -rf ../../../../image1000test200/train ./
+cp -rf ../../../../image1000test200/val ./
+vim ../create_filelist.sh
+cd ..
+chmod 777 create_filelist.sh
+cd ../..
+./examples/myfile4/create_filelist.sh
+cd examples/myfile4/
+vim create_lmdb.sh
+chmod 777 create_lmdb.sh
+cd ../..
+./examples/myfile4/create_lmdb.sh
+cd examples/myfile4/
+vim create_meanfile.sh
+chmod 777 create_meanfile.sh
+cd ../..
+./examples/myfile4/create_meanfile.sh
+cd examples/myfile4/
+vim myfile4_train_test.prototxt
+vim myfile4_solver.prototxt
+chmod 777 myfile4_train_test.prototxt
+chmod 777 myfile4_solver.prototxt
+cd ../..
+
+build/tools/caffe train -solver examples/myfile4/myfile4_solver.prototxt
+
+
+
+
+cifar10训练步骤如下：
+
+（1）打开终端，应用cd切换路径，如 cd ~/caffe/data/cifar10 ，
+
+（2）继续执行命令   ./get_cifar10.sh，
+
+（3）成功下载数据集之后，执行ls即可见所下载的数据文件，
+
+（4）再次将路径切换到cd ~/caffe/examples/cifar10
+
+（5）继续执行命令 ./create_cifar10.sh 
+
+此时系统报错./build/examples/cifar10/convert_cifar_data.bin: not found ，这是因为当前目录在/caffe/examples/cifar10 ，而执行./create_cifar10.sh ，需要在caffe目录下，因此我们需要切换到caffe目录下，然后执行./examples/cifar10/create_cifar10.sh 
+
+(6) 同理，在caffe目录下执行./examples/cifar10/train_quick.sh ,此时就不会报错找不到 ./build/tools/caffe 了。
+
+
+wget -c ftp://ftp.gnu.org/gnu/libtasn1/libtasn1-4.13.tar.gz
+tar -xzvf libtasn1-4.13.tar.gz
+cd libtasn1-4.13/
+./configure
+make -j 4
+sudo make install
+
+
+
+wget -c ftp://ftp.gnu.org/gnu/libunistring/libunistring-0.9.10.tar.gz
+tar -xzvf libunistring-0.9.10.tar.gz
+cd libunistring-0.9.10
+./configure
+make -j 4
+sudo make install
+
+
+
+
+wget -c https://nlnetlabs.nl/downloads/unbound/unbound-latest.tar.gz
+tar zxf unbound-latest.tar.gz && cd unbound-1.9.2/
+./configure --prefix=/usr --sysconfdir=/etc && make -j 4 && sudo make install
+cd ..
+
+
+
+
+
+https://p11-glue.freedesktop.org/p11-kit.html
+git clone https://github.com/p11-glue/p11-kit
+cd p11-kit/
+
+
+
+
+
+
+
+
+
+
+git clone -b master git://git.sv.gnu.org/emacs.git
+因为前面编译过，所以运行make clean ，make distclean 来清理一下， 再重新运行./configure ，make ，sudo make install ，这回就完全安装成功了
+
+
+
+
+
+
+
+
+
+参考结束
+
+
+图像数据库
+axel -n 10 http://image-net.org/imagenet_data/urls/imagenet_fall09_urls.tgz
+
+axel -n 10 http://image-net.org/imagenet_data/urls/imagenet_spring10_urls.tgz
+
+axel -n 10 http://image-net.org/imagenet_data/urls/imagenet_winter11_urls.tgz
+
+axel -n 10 http://image-net.org/imagenet_data/urls/imagenet_fall11_urls.tgz
+
+
+tar -xzvf imagenet_fall09_urls.tgz
+tar -xzvf imagenet_spring10_urls.tgz
+tar -xzvf imagenet_fall11_urls.tgz
+tar -xzvf imagenet_winter11_urls.tgz
+
+先处理下文本
+在notepad++中替换，选择使用表达式
+查找.*http
+替换http
+会卡住，不要动，等它自己替换好恢复
+
+批量下载图片示例
+wget -c -i spring10_urls.txt
+
+批量下载
+方法1：
+
+#!/bin/sh -e
+# usage:  ./axel-batch.sh the-download-url.list
+cat $1 | xargs -l1 axel -n8 -a
+
+方法2:
+#!/bin/sh -e
+# usage:  ./axel-batch.sh the-download-url.list
+cat $1 | while read LINE
+do
+        if [ -n "$LINE" ]; then
+        axel -n8 -a `echo $LINE`
+        fi
+done
+
+
+
+
+
+安装caffe时出错需要安装下面这个
+程序“protoc”尚未安装。 您可以使用以下命令安装：
+sudo apt install protobuf-compiler
+sudo apt install python-pip
+sudo apt install python3-pip
+
+报错时在报错的一行前面加减号以忽略错误继续执行
+
+pip安装出现Command "python setup.py egg_info" failed with error code 1 的解决方案
+2018年01月13日 09:13:51 小白旗 阅读数：92606更多
+个人分类： python
+ 版权声明：本文为博主原创文章，未经博主允许不得转载。	https://blog.csdn.net/qq_37788558/article/details/79049410
+今天装matplot和pillow时安装报错，按错误提示去下载了一些预装包，但还是不行。
+
+然后按照下边的方法更新安装插件，试了下，成功。
+
+本文只提供本人的一些经验，不代表可以解决所有人的问题。
+
+python -m pip install --upgrade --force pip --user
+pip install setuptools==33.1.1 --user
+python3 -m pip install --upgrade --force pip --user
+pip3 install setuptools==33.1.1 --user
+pip升级后Import Error:cannot import name main解决方案
+2018年05月22日 19:29:05 ZONG_XP 阅读数：43373
+版权声明：本文为博主原创文章，未经博主允许不得转载。	https://blog.csdn.net/zong596568821xp/article/details/80410416
+在Ubuntu上安装软件，不小心升级了pip，导致使用时报错如下
+
+
+
+后来发现是因为将pip更新为10.0.0后库里面的函数有所变动造成这个问题。 解决方法如下：
+
+
+
+sudo gedit /usr/bin/pip
+
+修改的内容如下：
+
+//修改前
+from pip import main  
+if __name__ == '__main__':  
+    sys.exit(main()) 
+修改后
+from pip import __main__  //这行也要修改
+if __name__ == '__main__':  
+    sys.exit(__main__._main())//增加__main__._
+
+最后在终端输入pip -V，默认版本就是长10啦啦啦啦
+
+大多数blog也有推荐说修改pip文件，可是细节不一样，我的话就这两种修改是有效的，至于部分说要先退出终端才能生效，其实是不需要的，修改pip配置文件后是马上生效的，毕竟若关闭了终端，不便于查找原因
+
+
+
+还出错就先安装这个
+pip install 'scikit-image<0.15' --user
+升级PIP
+python3 -m pip install --upgrade pip
+
+
+sudo apt update
+sudo apt install -y gfortran cython 
+sudo apt install -y libprotobuf-dev libleveldb-dev libsnappy-dev libopencv-dev libhdf5-serial-dev protobuf-compiler git
+sudo apt install --no-install-recommends libboost-all-dev
+sudo apt install -y python-dev libgflags-dev libgoogle-glog-dev liblmdb-dev libatlas-base-dev python-skimage
+sudo apt install -y python-pip
+sudo apt install -y build-essential
+sudo apt install -y cmake libgtk2.0-dev pkg-config libavcodec-dev libavformat-dev libswscale-dev
+sudo apt install -y python-numpy libtbb2 libtbb-dev libjpeg-dev libpng-dev libtiff-dev libdc1394-22-dev
+
+安装OpenCV
+OpenCV还是必须要装的，这里我选一个2.4的OpenCV。
+
+少废话，安pip包。
+
+pip install pyzmq jsonschema pillow --user
+pip install numpy scipy 
+pip install ipython jupyter pyyaml --user
+
+pip3 install pyzmq jsonschema pillow --user
+pip3 install numpy scipy 
+pip3 install ipython jupyter pyyaml --user
+编译Caffe
+先把Caffe拉下来：
+
+cd ~
+git clone https://github.com/BVLC/caffe
+cd caffe
+cp Makefile.config.example Makefile.config
+vim Makefile.config
+
+开始编译
+make all -j4
+make test -j4
+make runtest -j4
+然后就是漫长的等待，结束后加上也把Python的给编译了
+
+cd python
+pip install -r requirements.txt
+make pycaffe -j4
+然后在zsh或者bash环境中添加pycaffe的环境：
+
+export PYTHONPATH=/home/ubuntu/extra/caffe/python:$PYTHONPATH
+
+6.?安装Caffe
+A.?下载caffe
+
+cd ~
+mkdir git  //在home下新建一个git文件夹，用来存放那些从github上git下来的文zong件
+git clone https://github.com/BVLC/caffe.git    //从github上git caffe
+B.?开始安装
+cd caffe    //打开到刚刚git下来的caffecp Makefile.config.example Makefile.config 
+//将Makefile.config.example的内容复制到Makefile.config
+//因为make指令只能make   Makefile.config文件，而Makefile.config.example是caffe给出的makefile例子
+gedit Makefile.config      //打开Makefile.config文件
+仔细阅读makefile中的注释语句其实就知道该怎么操作了，这里贴出笔者的修改，也是大部分TX2用户的修改。
+//若使用cudnn，则将# USE_CUDNN := 1
+修改成：
+USE_CUDNN := 1
+ 
+//若使用的opencv版本是3的，则将# OPENCV_VERSION := 3
+修改为：
+OPENCV_VERSION := 3
+ 
+//重要的一项
+将# Whatever else you find you need goes here.下面的
+INCLUDE_DIRS := $(PYTHON_INCLUDE) /usr/local/include
+LIBRARY_DIRS := $(PYTHON_LIB) /usr/local/lib /usr/lib
+修改为：
+INCLUDE_DIRS :=  $(PYTHON_INCLUDE) /usr/local/include /usr/include/hdf5/serial
+LIBRARY_DIRS := $(PYTHON_LIB) /usr/local/lib /usr/lib /usr/lib/aarch64-linux-gnu /usr/lib/aarch64-linux-gnu/hdf5/serial
+//这是因为ubuntu16.04的文件包含位置发生了变化，尤其是需要用到的hdf5的位置，所以需要更改 
+C.?为hdf5创建链接
+
+\\首先执行下面两句话：
+find . -type f -exec sed -i -e 's^"hdf5.h"^"hdf5/serial/hdf5.h"^g' -e 's^"hdf5_hl.h"^"hdf5/serial/hdf5_hl.h"^g' '{}' \;
+cd /usr/lib/aarch64-linux-gnu
+\\这里笔者被坑了很多次，网上几乎所有的教程都是x86_64,给出的是cd /usr/lib/x86_64-linux-gnu，然而TX2并没有这个文件，浪费了笔者很多时间；
+笔者没有找到用aarch架构的caffe安装文章，故写下了此博客
+\\然后根据情况执行下面两句：
+sudo ln -s libhdf5_serial.so.10.1.0 libhdf5.so
+sudo ln -s libhdf5_serial_hl.so.10.0.2 libhdf5_hl.so
+\\注意：这里的10.1.0和10.0.2根据不同的系统可能对应的数字会不同，比如在ubuntu15.10中其数字就是8.0.2.
+\\具体的数字可以在打开的文件中查看对应文件后面跟的数字
+PS：查看当前目录下文件，用ls -a
+D.?Make各种文件
+
+cd ..   \\此时位置应该处于caffe文件夹下
+make all -j4  //j4代表计算机cpu有4个核，因此可以多线程一起make，这样make的速度会快很多。TX2是4核的，我们就不要学别人用什么j8，j16了，乖乖地敲j4
+make test -j4
+make runtest -j4
+make pycaffe   //如果以后用python来开发的话必须执行这一句，一般不管你是否用python，都会执行这一句
+make distribute
+
+LIBRARIES += glog gflags protobuf boost_system boost_filesystem m hdf5_serial_hl hdf5_seria
+
+sudo make clean
+make all -j4
+
+
+
+
+
+
+
+
+跳过下面
+
+
+
+
+apt-cache search gc
+
+清理结果重新编译
+sudo make distclean
+
+
+
+
+编译器
+gcc-4.4.7通过yum安装
+rpm -qa | grep gcc
+gcc-4.4.7-11.el6.x86_64
+libgcc-4.4.7-11.el6.x86_64
+gcc-c++-4.4.7-11.el6.x86_64
+yumsearchLibtool
+yuminstalllibtool-ltdl-devel.x86_64
+yumsearchlibunistring
+yuminstalllibunistring-devel.x86_64
+yumsearchlibffi
+yuminstalllibffi-devel.x86_64
+yumsearchgc
+
+sudo mkdir /usr/local/guile-2.2.4
+sudo ./configure --prefix=/usr/local/guile-2.2.4
+cd ..
+
+安装libtool
+sudo apt install libltdl-dev
+下面的跳过
+wget http://mirrors.kernel.org/gnu/libtool/libtool-2.4.6.tar.gz \ 
+&& tar xzvf libtool-2.4.6.tar.gz \ 
+&& cd libtool-2.4.6 \ 
+&& sudo ./configure --prefix=/usr/local/libtool-2.4.6
+sudo make -j 12 && sudo make install
+
+继续安装guile-2.2.4
+cd ../guile-2.2.4/
+sudo ./configure --prefix=/usr/local/guile-2.2.4
+
+apt-cache search libgmp
+sudo apt install libgmp-dev
+apt-cache search libunistring
+sudo apt install libunistring-dev
+sudo apt install pkg-config
+sudo apt install libffi-dev
+
+To build a working version of the collector, you will need to do something like the following, where D is the absolute path to an installation directory:
+
+cd /home/love/gmp-mpfr-mpc
+git clone git://github.com/ivmai/libatomic_ops.git
+git clone git://github.com/ivmai/bdwgc.git
+ln -s  /home/love/gmp-mpfr-mpc/libatomic_ops /home/love/gmp-mpfr-mpc/bdwgc/libatomic_ops
+cd bdwgc
+
+sudo apt install dh-autoreconf
+
+autoreconf -vif
+sudo automake --add-missing
+./configure
+sudo make -j 12
+sudo make install
+
+安装bdw-gc
+sudo apt install libgc-dev
+sudo apt install libreadline-dev
+sudo apt install python-dev
+sudo apt install python3-dev
+
+
+
+sudo find / -name Python.h
+/usr/include/python3.6m/Python.h
+/usr/include/python2.7/Python.h
+sudo cp -R  /usr/include/python3.6m/Python.h /usr/include/
+
+sudo cp -R  /usr/include/python3.6m/patchlevel.h /usr/include/
+sudo cp -R  /usr/include/python3.6m/* /usr/include/
+
+
+
+wget -c http://www.lua.org/ftp/lua-5.3.5.tar.gz
+tar zxf lua-5.3.5.tar.gz
+cd lua-5.3.5
+make linux test
+sudo make install
+
+
+wget -c http://sourceforge.net/projects/libcord/files/OldFiles/libcord-0.7.tar.bz2/download
+mv download libcord-0.7.tar.bz2
+tar -jxvf libcord-0.7.tar.bz2
+cd libcord-0.7/
+sudo make -j 4
+sudo make install
+
+
+
+
+cd ~
+git clone git://github.com/ivmai/libatomic_ops.git
+git clone git://github.com/ivmai/bdwgc.git
+ln -s  ~/libatomic_ops ~/bdwgc/libatomic_ops
+cd bdwgc
+autoreconf -vif
+automake --add-missing
+sudo ./configure --prefix=/usr/local/bdwgc
+sudo make -j 4
+sudo make install
+
+
+
+git clone https://github.com/ivmai/bdwgc.git
+git clone git://github.com/ivmai/bdwgc.git
+cd bdwgc
+git clone git://github.com/ivmai/libatomic_ops.git
+./autogen.sh
+sudo ./configure --prefix=/usr/local/bdwgc
+sudo make -j 4
+sudo make check
+
+
+
+cd libatomic_ops/
+./autogen.sh
+sudo ./configure --prefix=/usr/local/libatomic_ops
+sudo make -j 4
+sudo make install
+
+
+wget -c https://github.com/ivmai/bdwgc/releases/download/v8.0.4/gc-8.0.4.tar.gz
+tar -xvf gc-8.0.4.tar.gz
+cd gc-8.0.4
+sudo ./configure --prefix=/usr/local/gc-8.0.4
+sudo make -j 4
+sudo make install
+
+
+
+
+
+继续安装guile-2.2.4
+cd ../guile-2.2.4/
+sudo ./configure --prefix=/usr/local/guile-2.2.4
+sudo make -j 12
+sudo make install
+
+
+sudo wget https://mirrors.ustc.edu.cn/gnu/gcc/gcc-9.1.0/gcc-9.1.0.tar.gz
+tar -xvf gcc-9.1.0.tar.gz
+cd gcc-9.1.0
+
+mkdir temp
+cd temp
+sudo ../configure --disable-multilib --enable-languages=c,c++ --with-gmp=/usr/local/gmp-6.1.2 --with-mpfr=/usr/local/mpfr-4.0.2 --with-mpc=/usr/local/mpc-1.1.0 
+# 如果报错 请使用 ../configure --disable-multilib --enable-languages=c,c++
+sudo make -j 12
+sudo make install
+
+
+今天操作远端机器的时候发现少一个安装包， 需要传到对方的机器上，还能使用通过的老办法，直接SSH连上去了，发现传的很慢， 只有40K的样子， 看时间还需要二个多小时就有点受不了了。想想有一台FTP服务器上有这个文件，可以直接从FTP服务器上下载不就得了。本想电话指导着操作，但想到对面的操作能力，不禁心里又打起鼓来。
+
+
+
+     使用google搜了一下，找到了wget  命令。 格式如下：
+ wget    --ftp-user=xiaoxin --ftp-password=54321   -r ftp://10.10.10.10/tool/smc20
+
+
+  而后就开始下载了，很快有300K ，只有了几分钟就下载完了。下载安装完成。
+  以下为WGET常用的参数和命令。
+wget  ftp://xiaoxin:123456@10.10.17.193:9999/办处/郑州/cmdl32.exe
+
+
+  使用wget  命令直接下载cmdl32.exe文件， 指定用户名和密码为xiaoxin和123456
+wget    ftp://xiaoxin:123456@10.10.17.193:9999/办处/郑州/工作报表/*
+
+
+   使用wget命令下载ftp工作报表目录下的所有文件和目录，并下载到当前目录下。
+wget -r  ftp://xiaoxin:123456@10.10.17.193:9999/办处/郑州/工作报表/
+
+
+    参数  -r的做用是下些目录， 作用与上面的命令类似， 但不同之处在于直接使用 -r会在当前止录下面生成以目标IP地址命名的文件夹。 还有，使用 -r 会下载指定目录下的所有文件，包括一些外链文件都会下载，所以可以配置  -l  参数使用。
+wget  -r  -c  ftp://xiaoxin:123456@10.10.17.193:9999/办处/郑州/工作报表/ 
+
+    -c  表示使用断点续传功能。在网络状况不佳的情况下很实用。
+    wget  -i  down.txt 
+    直接使用down.txt中指定的URL时行下载，可以批量下载不同的文件，很方便，不用人一直参与， 多以以下形式出现
+
+     wget  -t  0  -w  31   -i down.txt     表示  -T  为重试次数， 0表示一直重试   -W  表示为失败时等待时长。
+
+    down.txt  文件内容应是一个完整的URL 如下图所示
+   ftp://xiaoxin:1@10.10.17.193:9999/办事处/郑州/工作报表/xx.doc
+   ftp://xiaoxin:1@10.10.17.193:9999/办事处/郑州/工作报表/xy.doc
+    wget  -i down.txt  -o down.log  
+
+
+   下载down.txt 中指定的URL进行下载，并将下载提示转存到down.log文件中.
+      wget  -r -nd  -A.doc  ftp://xiaoxin:1@10.10.17.193:9999
+
+第 1 步：安装 CUDA
+axel -n 10 https://developer.download.nvidia.cn/compute/cuda/10.1/secure/Prod/local_installers/cuda_10.1.168_418.67_linux_ppc64le.run?JEs7mrM7r_iHieZTpVy4Zft121rra2VdxY1ES4VyLXFcao8hxp_85D40AFbEXWk0Dwt_FGOdkxEx66lBMj0QpE4aHeVTOEYsabjjWNybMcCU2Xo-UbiPGrJAMm3C1iUlRLFRkYtwczeTxt0w7EYprgQTPq6RQq0g9zPs5xlMXy7QCNO69yE7TH7MIfonS8zTDs0Y7g
+
+git clone https://github.com/NVIDIA/cuda-gdb.git
+
+
+
+第 2 步：安装 cuDNN
+git clone https://github.com/NVIDIA/torch-cudnn.git
+
+
+
+第 4 步：安装 NCCL
+git clone https://github.com/NVIDIA/nccl.git
+
+
+第 5 步：安装 Caffe
+git clone https://github.com/NVIDIA/caffe.git
+
+
+git clone git://git.drogon.net/wiringPi
+
+
+
+3、wget -c http://ftp.gnome.org/pub/gnome/sources/glib/2.62/glib-2.62.0.tar.xz
+sudo apt install libmount-dev
+sudo pip3 install meson
+
+wget -c https://files.pythonhosted.org/packages/dd/96/e2ec4acccb8dee33b4987f553d531d61e3081c8d4cfbce249655dfe23906/ninja-1.9.0.post1.tar.gz
+tar xf ninja-1.9.0.post1.tar.gz
+
+
+
+
+
+
+
+关于error: possibly undefined macro: AC_PROG_LIBTOOL问题解决
+通过baidu或者google，大多数解决方案都是通过安装libtool，不同的平台有不同的安装方式；
+
+   比如ubuntu安装：sudo apt-get install libtool
+
+   大多数情况下都能解决问题；
+
+但是通过安装libtool也不能解决问题的，可能要尝试一下其他的解决方案：
+
+一般通过apt-get安装的软件都会在/usr目录下，既然提示无法找到AC_PROG_LIBTOOL，那么分析一般有两个原因：
+
+1.安装包失败或者其他原因比如版本问题导致没有定义AC_PROG_LIBTOOL；
+
+2.寻找路径有问题。
+
+从这两点出发，可以在/usr目录下全局查找AC_PROG_LIBTOOL
+可以看到在m4文件中能找到AC_PROG_LIBTOOL，那么就可能是路径问题；
+
+大多数m4文件都在/usr/share/aclocal/目录下，但实际上configure的默认aclocal路径为/usr/local/share/aclocal，那么可以有两种方法，第一，将/usr/share/aclocal/下的*.m4文件都拷贝到usr/local/share/aclocal/目录下；第二，指定aclocal的安装路径；
+
+pip3 install --extra-index-url https://developer.download.nvidia.com/compute/redist/jp/v42/ tensorflow-gpu==1.14+nv19.7 --user --no-warn-script-location
+参考
+# pip3 install tensorflow-gpu --user
+
+pip install pycuda --user
+下面可跳过
+在这里下载pycuda文件：https://pypi.org/project/pycuda/#files，然后extract
+
+进入提取后的文件夹：open terminal
+
+python3 configure.py --cuda-root=/usr/local/cuda-10.0
+
+su -c "make install"
+
+# 不要升级numpy版本到最新用来解决ModuleNotFoundError: No module named 'numpy.core._multiarray_umath' 错误（20190201）
+# Passing (type, 1) or '1type' as a synonym of type is deprecated; in a future version of numpy, it will be understood as (type, (1,)) / '(1,)type'.
+# 报错原因版本太高
+# pip uninstall numpy卸载
+# pip3 install numpy==1.16.0 --user
+# pip3 install --user --upgrade numpy   #将numpy更新到最新版本
+
+beckhans@Jetson:~$ python3
+Python 3.6.7 (default, Oct 22 2018, 11:32:17) 
+[GCC 8.2.0] on linux
+Type "help", "copyright", "credits" or "license" for more information.
+>>> import keras
+Using TensorFlow backend.
+>>> 
+
+# pip3更新出错的话用下面的命令更新
+curl https://bootstrap.pypa.io/get-pip.py -o get-pip.py
+python3 get-pip.py --user
+pip3 install itchat
+
+
+
+.libs / libguile_2.2_la-posix.o：在函数`scm_tmpnam'中：
+/home/love/下载/yi-lai/guile/guile-2.2.4/libguile/posix.c:1574：警告：使用`tmpnam'很危险，最好使用`mkstemp'
+在文件中加入头文件
+ #include <string.h>
+解决
+
+问题1：
+
+configure.ac:18: error: possibly undefined macro: AC_PROG_LIBTOOL
+
+                     If this token and others are legitimate, please use m4_pattern_allow.
+                     See the Autoconf documentation.
+                     autoreconf: /usr/bin/autoconf failed with exit status: 1
+
+解决方法：
+centos下：yum install libtool
+
+
+
+问题2：
+
+configure.ac：188：required file 'ltmain.sh'
+
+解决方法：
+
+autoreconf  -ivf
+
+7、提示：gmp was not found
+安装前面的手动编译这个就不用装了
+运行：sudo apt install libgmp-dev
+
+
+
+
+

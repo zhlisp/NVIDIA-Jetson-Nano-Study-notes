@@ -1,0 +1,43 @@
+#!/usr/bin/python3
+# -*- coding: utf-8 -*-
+# author: Yoff
+# last modified: Dec-19-2016
+
+import sys
+import os
+
+def erase_empty_disk(path, num):
+    print('erase ' + path + ' ' + str(num) + ' times')
+    for i_num in range(num):
+        try :
+            f = open(path+'/temp_file.tmp', 'w')
+            vfs = os.statvfs(path)
+            print(vfs.f_bavail)
+            print(vfs.f_bsize)
+            print(vfs.f_bavail * vfs.f_bsize)
+            bsize = vfs.f_bsize
+            bavail = vfs.f_bavail
+            while bavail > 1e6 :
+                f.write('0'*bsize)
+                bavail = bavail - 1
+            while bavail > 1 : # also can be 0, set 1 to avoid a rarely bug
+                f.write('0'*bsize)
+                f.flush()
+                vfs = os.statvfs(path)
+                bavail = vfs.f_bavail
+        except :
+            print('exception')
+        finally :
+            f.close()
+            os.remove(path+'/temp_file.tmp')
+
+if __name__ == '__main__':
+    if len(sys.argv) < 2:
+        print('usage: ./earase_empyt_disk disk_root_path [num_erases]')
+        sys.exit(1)
+    if len(sys.argv) < 3:
+        num = 1
+    else :
+        num = int(sys.argv[2])
+    path = sys.argv[1]
+    erase_empty_disk(path, num)

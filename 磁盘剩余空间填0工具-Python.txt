@@ -1,0 +1,67 @@
+磁盘剩余空间填0工具 - Python
+工具说明
+使用Python写了一个磁盘剩余空间的填0工具，基本原理是向磁盘中写入一个全0的文本文件，直到磁盘被填充满，然后将文件删除。
+
+使用说明
+使用方法为命令行运行程序，语法如下：
+
+./erase_empty_disk path_of_disk [erase_times]
+1
+默认擦写一次，即默认 erase_times = 1
+
+源代码
+代码如下：
+
+#!/usr/bin/python3
+# -*- coding: utf-8 -*-
+# author: Yoff
+# last modified: Dec-19-2016
+
+import sys
+import os
+
+def erase_empty_disk(path, num):
+    print('erase ' + path + ' ' + str(num) + ' times')
+    for i_num in range(num):
+        try :
+            f = open(path+'/temp_file.tmp', 'w')
+            vfs = os.statvfs(path)
+            print(vfs.f_bavail)
+            print(vfs.f_bsize)
+            print(vfs.f_bavail * vfs.f_bsize)
+            bsize = vfs.f_bsize
+            bavail = vfs.f_bavail
+            while bavail > 1e6 :
+                f.write('0'*bsize)
+                bavail = bavail - 1
+            while bavail > 1 : # also can be 0, set 1 to avoid a rarely bug
+                f.write('0'*bsize)
+                f.flush()
+                vfs = os.statvfs(path)
+                bavail = vfs.f_bavail
+        except :
+            print('exception')
+        finally :
+            f.close()
+            os.remove(path+'/temp_file.tmp')
+
+if __name__ == '__main__':
+    if len(sys.argv) < 2:
+        print('usage: ./earase_empyt_disk disk_root_path [num_erases]')
+        sys.exit(1)
+    if len(sys.argv) < 3:
+        num = 1
+    else :
+        num = int(sys.argv[2])
+    path = sys.argv[1]
+    erase_empty_disk(path, num)
+
+--------------------- 
+
+作者：Yoff 
+
+来源：CSDN 
+
+原文：https://blog.csdn.net/syfzhzh/article/details/53763242 
+
+版权声明：本文为博主原创文章，转载请附上博文链接！

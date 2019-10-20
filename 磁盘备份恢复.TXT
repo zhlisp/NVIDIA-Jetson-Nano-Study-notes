@@ -1,0 +1,141 @@
+安装新的XZ
+wget https://tukaani.org/xz/xz-5.2.4.tar.bz2
+tar -jxvf xz-5.2.4.tar.bz2
+cd xz-5.2.4/
+sudo ./configure --prefix=/usr/local/xz-5.2.4
+sudo make -j 4
+sudo make install
+
+
+linux中查看软件文件安装路径
+whereis xz
+删除原来的
+sudo rm -f /usr/bin/xz /usr/bin/X11/xz
+创建新的
+sudo ln -s /usr/local/xz-5.2.4/bin/xz /usr/bin/xz
+sudo ln -s /usr/local/xz-5.2.4/bin/xz /usr/bin/X11/xz
+
+多线程压缩文件
+xz -T0 -z ~/disk1.img
+加入--block-size=32MiB指定分块大小压缩
+解压缩文件
+xz -d ~/disk1.xz
+
+
+备份磁盘到文件
+sudo dd if=/dev/sda of=~/disk1.img
+查看备份进度
+watch -n 5 pkill -USR1 ^dd$
+
+
+从镜像文件恢复磁盘或分区
+很简单，把上面命令中，of和if指向的文件名互换一下即可实现恢复。例如
+sudo dd if=~/disk1.img of=/dev/sda
+
+
+
+
+
+
+
+Linux使用高压缩率的xz
+tar -cJf aaa.txz my_dir
+tar -xJf aaa.txz
+
+xz多线程
+xz -T0
+
+压缩一个文件特别方便，只需使用 -z参数如
+
+xz -z ./haha.txt
+就会在当前目录下生成一个haha.txt.xz文件，解压直接使用-d参数即可
+
+如果想要自定义文件名，可以使用-c参数，如下
+xz -c ./haha.txt > gaga.xz
+如果要使用多线程，只需指定-T 参数或者--threads参数，如下，使用4个线程进行压缩
+
+xz -T 4 -z ./haha.txt
+注意，-T 参数只是指定最多利用的线程数，实际利用可能比该参数低。如果参数指定0，那么就尽可能多的使用CPU线程。一般来说线程越多CPU利用率越高。
+
+
+
+
+
+
+
+跟磁盘相关的几个常用命令：
+
+df -h：查看磁盘占用情况
+df -T：查看所有磁盘的文件系统类型(type)
+fdisk -l：查看所有被系统识别的磁盘
+mount -t type device dir：挂载device到dir
+
+备份磁盘
+sudo dd if=/dev/sda | bzip2 > ~/disk.img.bz2
+
+想要查看上面的dd命令的执行进度，可以使用下面几种方法：
+
+比如：每5秒输出dd的进度
+
+方法一：
+
+watch -n 5 pkill -USR1 ^dd$
+方法二：
+
+watch -n 5 killall -USR1 dd
+方法三：
+
+while killall -USR1 dd; do sleep 5; done
+方法四：
+
+while (ps auxww |grep " dd " |grep -v grep |awk '{print $2}' |while read pid; do kill -USR1 $pid; done) ; do sleep 5; done
+上述四种方法中使用三个命令：pkill、killall、kill向dd命令发送SIGUSR1信息，dd命令进程接收到信号之后就打印出自己当前的进度。
+
+
+linux dd实现磁盘完整全盘镜像备份backup,恢复recover(restore)
+1,dd操作就是简单的按字节复制，什么分区表啊，MBR(master boot record)啊统统照搬;
+
+1. 磁盘克隆
+也就是把整个硬盘复制一份。当然你首先需要在计算机上在接上一块新硬盘，并让系统识别。例如这块硬盘可能被识别为/dev/sdb,原有硬盘叫/dev/sda. 然后你可以在linux命令行上简单地执行：
+dd if=/dev/sda of=/dev/sdb
+对就这么简单，此命令完成后，你的第二块硬盘上将有一个和第一块硬盘一模一样的副本，也是可以启动的。因为dd操作就是简单的按字节复制，什么分区表啊，MBR啊统统照搬。
+当然你也可以做一些微调，来定制一下克隆操作。例如你可能希望把硬盘上的内容全部备份到一个磁盘文件中，而不是另一块新硬盘，你可以
+dd if=/dev/sda of=~/disk1.img
+之后，disk1.img就是备份好的磁盘映像文件，你可以复制或转移到其他介质也可以压缩一下：
+gzip disk1.img #generates disk1.img.gz
+或者在创建磁盘映像文件的同时就执行压缩：
+dd if=/dev/sda | gzip > disk.img.gz
+dd if=/dev/sda | bzip2 > disk.img.bz2
+不错吧！ghost的功能都有了。
+
+2.分区克隆
+如果我们不想克隆整块磁盘，只想把某些存放数据的分区备份一下，你会需要克隆一个分区。正如预备知识所述，分区在linux下也是一个文件。例如
+dd if=/dev/sda1 of=~/part1.img
+将把第一块磁盘的第一个分区备份到名为part1.img的文件中。
+也可以进行分区复制：
+dd if=/dev/hda1 of=/dev/hda3
+将把分区一原样复制到分区3.
+
+3. 从镜像文件恢复磁盘或分区
+很简单，把上面命令中，of和if指向的文件名互换一下即可实现恢复。例如
+dd if=disk1.img of=/dev/sda
+把保存在disk1.img中的映像恢复到第一块磁盘
+dd if=part1.img of=/dev/hda2
+把保存在part1.img中的映像恢复到第一块硬盘的第二个分区
+
+最后，需要注意一点是，无论备份还是恢复，都需要保证 of 指向的文件或磁盘空间要大于 if 指向的内容，因为是按字节复制 如果没有足够的空间去存储内容，备份自然会失败。
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

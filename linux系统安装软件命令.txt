@@ -1,0 +1,2509 @@
+﻿# 2019-6-1
+
+# 系统初始化，操作方式，点右键是粘贴复制的文本内容，左键选中文本按ctrl+c复制文本
+
+# 输入用户名
+# 输入密码2次
+
+# Linux设置初始root密码
+# 第一步：
+sudo passwd root
+# 第二步：[sudo] password for you: ---> 输入你的密码（你现在这个用户的密码）
+# 第三步：Enter new UNIX password: ---> 设置root 密码
+# 第四步：Retype new UNIX password: ---> 重复密码
+# 第五步：完成
+
+# 进和apt源地址更新为阿里源
+cd /etc/apt
+# 备份系统原来的文件
+sudo mv sources.list sources.list_bak
+# 新建命令脚本文件，用于自动区配源地址
+sudo gedit apt.sh
+
+# 按a输入模式
+Codename=$( (lsb_release -a)|awk '{print $2}'|tail -n 1 )
+echo "\
+deb http://mirrors.aliyun.com/ubuntu/ $Codename main multiverse restricted universe
+deb http://mirrors.aliyun.com/ubuntu/ $Codename-backports main multiverse restricted universe
+deb http://mirrors.aliyun.com/ubuntu/ $Codename-proposed main multiverse restricted universe
+deb http://mirrors.aliyun.com/ubuntu/ $Codename-security main multiverse restricted universe
+deb http://mirrors.aliyun.com/ubuntu/ $Codename-updates main multiverse restricted universe
+deb-src http://mirrors.aliyun.com/ubuntu/ $Codename main multiverse restricted universe
+deb-src http://mirrors.aliyun.com/ubuntu/ $Codename-backports main multiverse restricted universe
+deb-src http://mirrors.aliyun.com/ubuntu/ $Codename-proposed main multiverse restricted universe
+deb-src http://mirrors.aliyun.com/ubuntu/ $Codename-security main multiverse restricted universe
+deb-src http://mirrors.aliyun.com/ubuntu/ $Codename-updates main multiverse restricted universe ">sources.list
+apt update
+# 按esc命令模式，输入:wq保存退出
+
+# 添加文件执行权限
+sudo chmod 777 apt.sh
+# 执行更新脚本
+sudo ./apt.sh
+
+# 将所有软件升级到新版本。提示输入Y
+sudo apt upgrade
+# 将系统升级到新版本。提示输入Y
+sudo apt dist-upgrade
+# 这个命令会把安装的软件的备份也删除，但是这样不会影响软件的使用。
+sudo apt clean
+# 定期运行这个命令来清除那些已卸载的软件包的.deb文档。
+sudo apt autoclean
+
+# 系统初始化，更改源完成，回到用户目录
+cd ~
+
+
+生成指定大小的空文件
+dd if=/dev/zero of=tmp.5G bs=1G count=5
+
+
+# 安装gcc9.1.0前先按装些编译依赖软件，提示输入Y
+sudo apt install gcc
+sudo apt install make
+sudo apt install make-guile
+sudo apt install g++
+
+
+
+# 开始安装
+# 参考https://www.jianshu.com/p/89702b13bc51
+# linux升级gcc到gcc-8.1.0
+# 作者：王侦 
+# 2018.07.04 07:45* 字数 58 阅读 190评论 0喜欢 0
+# 1.编写升级脚步
+# 切换为root用户
+su 
+# 切换目录
+cd /usr/src
+# 创建并编写脚本文件
+gedit upgradeGcc.sh
+# 内文如下，按a输入模式
+#!/bin/bash
+
+#获取源码
+#sudo wget https://mirrors.ustc.edu.cn/gnu/gcc/gcc-9.1.0/gcc-9.1.0.tar.gz
+wget https://mirrors.ustc.edu.cn/gnu/gcc/gcc-9.1.0/gcc-9.1.0.tar.gz
+ 
+#解压
+#sudo tar -xvf gcc-9.1.0.tar.gz
+tar -xvf gcc-9.1.0.tar.gz
+ 
+# 进入源码目录
+cd gcc-9.1.0
+# 下载些组件
+#sudo ./contrib/download_prerequisites
+./contrib/download_prerequisites
+# 返回上一层目录
+cd ..
+ 
+#建立编译输出目录
+#sudo mkdir gcc-build-9.1.0
+mkdir gcc-build-9.1.0
+ 
+#进入下面目录，执行命令，生成Makefile文件
+cd gcc-build-9.1.0
+#sudo ../gcc-9.1.0/configure --enable-checking=release --enable-languages=c,c++ --disable-multilib
+../gcc-9.1.0/configure --enable-checking=release --enable-languages=c,c++ --disable-multilib
+ 
+#执行命令进行编译，此处利用4个job，需编译时约40分钟，此值不宜设置过高
+#sudo make -j8
+make -j8
+ 
+#安装
+#sudo make install
+make install
+
+# 2.执行脚步
+chmod 777 upgradeGcc.sh
+./upgradeGcc.sh
+# 3.检测版本
+gcc -v
+# 4.头文件在哪
+/usr/local/include/c++/9.1.0
+# gcc-9.1.0安装完成
+# 存在首次安装GCC不彻底污染问题，清理后继续重新编译安装
+make distclean
+
+
+
+
+# 以下步骤如果达到GLIBCXX_3.4.25可跳过
+# 老版本在：
+# /usr/include/c++/5/
+# 5.编译程序并执行
+# 发现以下错误
+# ./test: /usr/lib/x86_64-linux-gnu/libstdc++.so.6: version `GLIBCXX_3.4.22' not found (required by ./test)
+# 查看当前的GLIBC版本
+strings /usr/lib/x86_64-linux-gnu/libstdc++.so.6 | grep GLIBCXX
+# //最新只到了22
+# GLIBCXX_3.4.19
+# GLIBCXX_3.4.20
+# GLIBCXX_3.4.21
+# 下载libstdc++.so.6
+# 找到lib64stdc++6_9.1.0-1_i386.deb
+# http://ftp.de.debian.org/debian/pool/main/g/gcc-9/
+sudo wget http://ftp.de.debian.org/debian/pool/main/g/gcc-9/lib64stdc++6_9.1.0-1_i386.deb
+sudo ar -x lib64stdc++6_9.1.0-1_i386.deb
+sudo tar xvJf data.tar.xz
+cd ./usr/lib64/
+sudo mv libstdc++.so.6.0.26 /usr/lib/x86_64-linux-gnu/
+cd /usr/lib/x86_64-linux-gnu/
+# sudo rm libstdc++.so.6
+sudo mv libstdc++.so.6 libstdc++.so.6.bak
+sudo ln libstdc++.so.6.0.26 libstdc++.so.6
+# 补充安装，条件合适可不装
+
+
+
+
+# 安装chez-scheme
+cd ~
+wget https://codeload.github.com/cisco/ChezScheme/zip/master
+mv master chez-scheme.zip
+
+# 安装依赖
+sudo apt install unzip
+sudo apt install zip
+sudo apt install uuid-dev
+sudo apt install libncurses5-dev
+sudo apt install libx11-dev
+
+# 开始安装
+unzip chez-scheme.zip
+cd ChezScheme-master/
+sudo ./configure
+sudo make -j 8
+sudo make install
+# 安装chez-scheme完成回到用户目录
+cd ~
+
+
+
+
+
+# 安装common-lisp开发环境
+sudo apt install sbcl
+sudo apt install emacs
+sudo apt install slime
+sudo apt install cl-quicklisp
+sudo apt install cl-mcclim
+# 安装common-lisp开发环境完成
+
+
+
+
+
+
+
+# nano开机设置，语言设置，输入法设置，系统升级，打开商店删不用的软件。
+# 删纸牌游戏，Amazon,Fcitx等
+# Scratch
+# Ubuntu系统无法识别exFat或FAT32的U盘
+sudo apt install exfat-fuse
+
+# 切换为10W功耗模式
+sudo nvpmodel -m0
+# 检查一下确认JetBot处于10W功耗模式
+nvpmodel -q
+
+原文链接：https://blog.csdn.net/liam_dapaitou/article/details/90812748
+控制风扇开关：
+ON :
+sudo sh -c ‘echo 255 > /sys/devices/pwm-fan/target_pwm’
+
+OFF :
+sudo sh -c ‘echo 0 > /sys/devices/pwm-fan/target_pwm’
+(slowly turned off)
+
+重启以后风扇是不转的，所以需要设置开机运行
+sudo sh -c 'echo 255 > /sys/devices/pwm-fan/target_pwm' 
+创建/etc/rc.local（18.04没有rc.local），并添加如下内容:
+sudo gedit /etc/rc.local
+#!/bin/bash
+sleep 10
+sudo /usr/bin/jetson_clocks
+sudo sh -c 'echo 255 > /sys/devices/pwm-fan/target_pwm'
+添加rc.local可执行权限
+sudo chmod 755 /etc/rc.local
+sudo reboot
+使用 jetson_clocks 命令可以启动风扇
+sudo jetson_clocks
+运行后 /sys/devices/pwm-fan/target_pwm 会被设置为255
+cat /sys/devices/pwm-fan/target_pwm
+
+# Linux设置初始root密码
+# 第一步：
+sudo passwd root
+# 第二步：[sudo] password for you: ---> 输入你的密码（你现在这个用户的密码）
+# 第三步：Enter new UNIX password: ---> 设置root 密码
+# 第四步：Retype new UNIX password: ---> 重复密码
+# 第五步：完成
+@ 可选解锁root账户 
+@ sudo passwd –unlock root
+
+
+# 修改hosts文件
+# 由于是本地编译安装，使用到了git clone命令，正常情况下，速度慢的可怜，在没有梯子的情况下，
+# 只能修改下hosts文件来自我安慰了，相比原来，速度也是提升了不少，此处留下了激动的泪水。废话少说，干！
+# （1）找到本地的hosts文件，并打开，
+sudo gedit /etc/hosts
+# （2）在文件的末尾添加以下内容，顺便将 ports.ubuntu.com也添加了,
+192.30.255.112 https://github.com
+192.30.255.113 https://github.com
+151.101.76.249 github.global.ssl.fastly.net
+91.189.88.151 ports.ubuntu.com
+91.189.88.150 ports.ubuntu.com
+# 重启网络，生效修改后的hosts文件，
+sudo /etc/init.d/networking restart
+
+寻找位置
+which apt-get
+sudo mv /usr/bin/apt-get /usr/bin/apt-get.bak
+sudo ln -s /usr/bin/apt /usr/bin/apt-get
+
+# 更新下
+sudo apt update
+# 将所有软件升级到新版本。提示输入Y
+sudo apt upgrade
+# 将系统升级到新版本。提示输入Y
+sudo apt dist-upgrade
+sudo apt install apt-utils
+
+
+# 安装PIP3
+sudo apt install python-pip
+sudo apt install python3-pip
+
+使用得比较多并且比较顺手的是清华大学的pip源，它是官网pypi的镜像，每隔5分钟同步一次，地址为 https://pypi.tuna.tsinghua.edu.cn/simple
+mkdir .pip
+sudo gedit ~/.pip/pip.conf
+[global]
+timeout = 6000
+index-url = https://pypi.tuna.tsinghua.edu.cn/simple
+trusted-host = pypi.tuna.tsinghua.edu.cn
+
+which pip3
+sudo ln -s /usr/bin/pip3 /usr/bin/pip
+
+# 用pip更新Python包的三种方法（基于Python3.6.*）
+# 一、pip版本的查看及更新
+# 版本查看
+pip -V 或 pip show pip
+
+which pip3   # 查找命令位置
+locate pip3  # 查找文件位置
+sudo find / -name "cv2.so"
+
+# sudo ln -s /usr/bin/pip3 /usr/bin/pip
+sudo rm /usr/local/bin/pip
+# sudo ln -s /usr/local/bin/pip3 /usr/local/bin/pip
+sudo rm /usr/bin/python
+sudo ln -s /usr/bin/python2.7 /usr/bin/python
+sudo ln -s /usr/lib/python2.7/dist-packages/cv2.aarch64-linux-gnu.so /usr/lib/python2.7/dist-packages/cv2.so
+
+gedit ~/.bashrc
+export PATH=/home/jetbot/.local/bin:$PATH
+source /opt/ros/melodic/setup.bash
+source /home/jetbot/workspace/catkin_ws/devel/setup.bash
+export ROS_HOSTNAME=jetbot.local
+export ROS_MASTER_URI=http://jetbot.local:11311
+export PYTHONPATH="/usr/lib/python3.6/dist-packages"
+export PYTHONPATH="/usr/local/lib/python2.7/dist-packages/"
+export PYTHONPATH="/usr/local/lib/python3.6/dist-packages/"
+export PYTHONPATH="/opt/ros/hydro/lib/python2.7/dist-packages"
+export PYTHONPATH="/opt/ros/hydro/lib/python3.6/dist-packages"
+source ~/.bashrc
+
+python3
+import sys
+sys.path
+sys.path.append('/usr/local/lib/python3.6/dist-packages/adafruit_motor_hat/')
+sys.path.append('/usr/local/lib/python2.7/dist-packages/adafruit_motor_hat/')
+sys.path.append('/usr/local/lib/python3.6/dist-packages/adafruit_motor_hat/__pycache__/')
+# pip更新
+sudo -H pip3 install --upgrade pip
+
+
+# pip升级后Import Error:cannot import name main解决方案
+
+sudo gedit /usr/bin/pip3
+sudo gedit /usr/local/bin/pip3
+
+# 将原来的：
+
+from pip import main
+if __name__ == '__main__':
+    sys.exit(main())
+# 改为：
+
+from pip import __main__
+if __name__ == '__main__':
+    sys.exit(__main__._main())
+# 就可以了，注意__main__左右的下划线是两个下划线，很多同学不成功的原因是因为只写了一个下划线
+
+
+sudo rm /usr/bin/python
+sudo ln -s /usr/bin/python3 /usr/bin/python
+
+# 二、pip更新已安装包
+# 查看有待更新的包,按需要进行更新
+ #查看更新
+ pip list --outdated
+ #更新某个包
+ sudo -H pip install --upgrade <packages-name>
+
+# 添加环境变量
+sudo gedit ~/.bashrc
+export PATH=/home/jetbot/.local/bin:$PATH
+source ~/.bashrc
+
+# 安装更新工具pip-review
+sudo -H pip2 install -U pip-review
+sudo -H pip3 install -U pip-review
+
+
+# 下面语句逐个弹出是否确认某个库需要更新
+pip-review --local --interactive 
+
+# 写Python脚本程序自动更新
+sudo python3
+import pip
+from subprocess import call
+from pip._internal.utils.misc import get_installed_distributions
+
+for dist in get_installed_distributions():
+    call("sudo -H pip3 install --upgrade " + dist.project_name, shell=True)
+
+sudo python
+import pip
+from subprocess import call
+from pip._internal.utils.misc import get_installed_distributions
+
+for dist in get_installed_distributions():call("sudo -H pip2 install --upgrade " + dist.project_name, shell=True)
+
+
+https://github.com/NVIDIA
+https://blog.csdn.net/javahaoshuang3394/article/details/79261425
+
+git 断点续传
+建立repo的本地存储目录
+mkdir opencv
+
+进入目录执行 git init生成.git索引文件夹
+cd opencv
+git init
+
+继续执行 git fetch GIT_REPO_URL, 如果掉线，可继续重复执行该命令知道看到如下标志表示fetch成功：
+rom GIT_REPO_URL
+*branch       HEAD   -> FETCH_HEAD
+
+git fetch https://github.com/opencv/opencv.git
+
+
+执行
+git checkout FETCH_HEAD
+git checkout master
+
+git remote add origin https://github.com/opencv/opencv.git
+git pull origin master --allow-unrelated-histories
+git branch --set-upstream-to=origin/master master
+git pull
+
+OK clone Head成功
+
+# 这个命令会把安装的软件的备份也删除，但是这样不会影响软件的使用。
+# sudo apt clean
+# 定期运行这个命令来清除那些已卸载的软件包的.deb文档。
+# sudo apt autoclean
+# 清理不用软件，建议不懂不要清
+# sudo apt autoremove
+
+# 电脑硬件温度查看程序
+git clone https://github.com/rbonghi/jetson_stats.git
+sudo -H pip3 install -U jetson-stats
+sudo jtop
+
+
+# 安装输入法
+sudo apt install ibus ibus-table-wubi ibus-pinyin
+# 用商店安装图形化编程
+Scratch
+# 安装虚拟键盘
+sudo apt install onboard
+
+# 安装录音软件
+sudo apt install audacity
+
+# 安装摄像头驱动
+sudo apt install cheese
+sudo apt install camorama
+sudo apt install guvcview
+
+sudo cp /etc/apt/sources.list /etc/apt/sources.list_bak
+
+@ 这是树莓派的阿里源
+deb http://mirrors.aliyun.com/raspbian/raspbian/ jessie main contrib non-free rpi
+deb-src http://mirrors.aliyun.com/raspbian/raspbian/ jessie main contrib non-free rpi
+@
+
+ubuntu 安装brew
+安装
+sudo apt install linuxbrew-wrapper
+检查安装：brew help
+brew search  #搜索包
+brew install  #安装包
+brew uninstall  #删除包
+brew list  #列出 pkg 的文件
+brew info  #关于 pkg 的信息
+brew update  #更新包
+brew upgrade  #升级包
+
+安装远程桌面环境
+sudo apt install xrdp
+
+开启远程root权限
+sudo gedit /etc/ssh/sshd_config
+#PermitRootLogin prohibit-password
+PermitRootLogin yes
+
+# 更改文件属主 -R为递归参数，应用于子文件夹和子文件，:左边的用户组可省略
+sudo chown -R love:love git/
+# 更改文件权限 -R为递归参数，应用于子文件夹和子文件
+chmod -R git/
+# 系统初始化完成
+
+
+
+
+
+JetBot安装最新软件（可选）
+JetBot的GitHub上提供软件可能比预装在镜像的要新。注意：我们提供的程序和JetBot官方github给出的有点区别，你如果直接更新了最新的软件，程序将不再会显示当前的电池点电量
+在浏览器地址栏输入http://<jetbot_ip_address>:8888连接到小车
+首次打开需要输入用户名和密码登录。默认用户名和密码均为jetbot
+点击终端icon打开一个终端
+输入以下的指令来安装新的软件库，这里给出的是微雪版本（相对于NVIDIA官方版本增加了电压显示），如果想要使用官方原版，可以直接参考NVIDIA jetbo GitHub
+git clone https://github.com/waveshare/jetbot
+cd jetbot
+sudo python3 setup.py install
+然后将更新的软件库覆盖掉旧的软件库
+
+cd ~
+sudo apt-get install rsync
+rsync -r jetbot/notebooks ~/Notebooks
+
+
+
+
+
+JetBot AI Kit 教程八、ROS
+1. 前言
+如果你从来没有接触过ROS系统，请先参考ROS官方教程熟悉ROS系统，了解各种ROS概念，然后再根据本教程通过ROS操作JetBot小车
+
+2. 前期准备
+使用前需要先安装系统，参考：
+
+JetBot AI Kit 教程二、安装镜像
+3. 安装melodic版本ROS
+Jetson Nano提供的系统镜像是基于18.04版本Ubuntu系统，支持直接用apt安装ROS.使用下面的指令，按顺序安装，注意安装过程中是否有报错。
+
+# enable all Ubuntu packages:
+sudo apt-add-repository universe
+sudo apt-add-repository multiverse
+sudo apt-add-repository restricted
+ 
+# add ROS repository to apt sources
+sudo sh -c 'echo "deb http://packages.ros.org/ros/ubuntu $(lsb_release -sc) main" > /etc/apt/sources.list.d/ros-latest.list'
+sudo apt-key adv --keyserver 'hkp://keyserver.ubuntu.com:80' --recv-key C1CF6E31E6BADE8868B172B4F42ED6FBAB17C654
+ 
+# install ROS Base
+sudo apt-get update
+sudo apt-get install ros-melodic-ros-base
+ 
+# add ROS paths to environment
+sudo sh -c 'echo "source /opt/ros/melodic/setup.bash" >> ~/.bashrc'
+添加i2c到user用户组
+
+sudo usermod -aG i2c $USER
+4. 创建catkin工作空间
+关闭当前终端，重新打开一个新的终端。确认ROS是否安装成功
+
+$ echo $ROS_PACKAGE_PATH home/nvidia/workspace/catkin_ws/src:/opt/ros/melodic/share
+创建catkin工作空间保存我们的ROS程序包
+
+# create the catkin workspace
+mkdir -p ~/workspace/catkin_ws/src
+cd ~/workspace/catkin_ws
+
+
+ 
+# add catkin_ws path to bashrc
+sudo sh -c 'echo "source ~/workspace/catkin_ws/devel/setup.bash" >> ~/.bashrc'
+5. 编译安装jetson-inference
+# git and cmake should be installed
+sudo apt-get install git cmake
+【注意】由于Jetson nano服务器均在国外，部分资源需要能够上外网才能可以获取，否则可能安装失败。另外需要安装一下库
+
+sudo apt install libqt4-dev libglew-dev
+# clone the repo and submodules
+cd ~/workspace
+git clone -b onnx https://github.com/dusty-nv/jetson-inference
+cd jetson-inference
+git submodule update --init
+git pull
+# build from source
+mkdir build
+cd build
+cmake ../
+make
+ 
+# install libraries
+sudo make install
+
+6. 编译安装ros_deep_learning
+# install dependencies
+sudo apt-get install ros-melodic-vision-msgs ros-melodic-image-transport ros-melodic-image-publisher
+ 
+# clone the repo
+cd ~/workspace/catkin_ws/src
+git clone https://github.com/dusty-nv/ros_deep_learning
+cd ros_deep_learning
+git pull
+
+# make ros_deep_learning
+cd ../    # cd ~/workspace/catkin_ws
+sudo -H pip3 install -U catkin_pkg
+sudo -H pip3 install -U rosdep rosinstall_generator wstool rosinstall six vcstools
+sudo -H pip3 install -U pydot
+
+
+catkin_make
+ 
+# confirm that the package can be found
+rospack find ros_deep_learning /home/nvidia/workspace/catkin_ws/src/ros_deep_learning
+7. 编译安装jetbot_ros
+# clone the repo
+cd ~/workspace/catkin_ws/src
+git clone https://github.com/waveshare/jetbot_ros
+cd jetbot_ros
+git pull
+
+# build the package
+cd ../    # cd ~/workspace/catkin_ws
+catkin_make
+ 
+# confirm that jetbot_ros package can be found
+rospack find jetbot_ros /home/nvidia/workspace/catkin_ws/src/jetbot_ros
+8. 测试jetbot ROS
+打开一个新终端，然后运行ros核心节点
+sudo -H pip3 install -U netifaces
+
+
+roscore
+输出信息如下，则ros正常工作
+setting /run_id to 9be3f8ca-e758-11e9-b06b-72b5f773b75d
+process[rosout-1]: started with pid [9592]
+started core service [/rosout]
+
+
+【注意】roscore核心节点必须保持运行状态，否则其他所有的节点都不能工作
+
+运行电机节点
+另外再打开一个终端，roscore节点不要关闭。运行如下命令启动jetbot_motors节点
+# sudo -H pip3 install -U adafruit_motor_hat
+# git clone git：//github.com/ferret-guy/adafruit_motor_hat
+# python setup.pyinstall
+# gedit ~/.bashrc
+# export PYTHONPATH=/usr/local/lib/python3.6/dist-packages
+sudo ln -s /usr/local/lib/python3.6/dist-packages/adafruit_motor_hat /usr/local/lib/python3.6/dist-packages/Adafruit_MotorHAT
+sudo ln -s /usr/local/lib/python2.7/dist-packages/adafruit_motor_hat /usr/local/lib/python2.7/dist-packages/Adafruit_MotorHAT
+
+# git clone http://www.github.com/adafruit/Adafruit-PWM-Servo-Driver-Library
+sudo rm /usr/local/bin/pip2
+sudo ln -s /usr/local/bin/pip2.7 /usr/local/bin/pip2
+sudo gedit /usr/local/bin/pip2.7
+# 将python改成python2
+
+sudo -H pip2 install -U Adafruit_MotorHAT
+
+
+rosrun jetbot_ros jetbot_motors.py
+再新建一个终端，输入rosnode list可以查看jetbot_motors节点是否启动。输入rostopic list可以查看jetbot_motor节点监听的话题
+jetbot@jetbot:~$ rosnode list
+/jetbot_motors
+/rosout
+jetbot@jetbot:~$ rostopic list
+/jetbot_motors/cmd_dir
+/jetbot_motors/cmd_raw
+/jetbot_motors/cmd_str
+/rosout
+/rosout_agg
+
+
+【注意】到2019/02/22为止, jotbot-ros只实现cmd_str方法，后续如果有其他更新，可以自行了解
+
+cmd_str 通过发送字符串命令 (left/right/forward/backward/stop)控制jetbot运动。
+
+测试电机命令
+打开一个新的终端，运行如下测试命令可以控制jetbot运动
+
+rostopic pub /jetbot_motors/cmd_str std_msgs/String --once "forward"
+rostopic pub /jetbot_motors/cmd_str std_msgs/String --once "backward"
+rostopic pub /jetbot_motors/cmd_str std_msgs/String --once "left"
+rostopic pub /jetbot_motors/cmd_str std_msgs/String --once "right"
+rostopic pub /jetbot_motors/cmd_str std_msgs/String --once "stop"
+使用OLED显示信息
+新建一个终端运行OLED节点
+sudo -H pip2 install -U Adafruit_SSD1306
+rosrun jetbot_ros jetbot_oled.py
+jetbot_oled 监听/jetbot_oled/user_text话题，接受字符信息并显示。运行如下命令显示“HELLO”字符 rostopic pub /jetbot_oled/user_text std_msgs/String --once "HELLO!"
+
+使用键盘控制jetbot移动
+gedit /home/jetbot/workspace/catkin_ws/src/jetbot_ros/scripts/teleop_key.py
+    print("Reading from keyboard")
+    print("Use WASD keys to control the robot")
+    print("Press Caps to move faster")
+    print("Press q to quit")
+
+新建一个终端运行teleop_key节点
+
+rosrun jetbot_ros teleop_key.py
+程序运行后通过键盘输入W、S、D、A四个按键控制jetbot前后左右移动
+
+使用游戏摇杆控制jetbot移动
+将游戏手柄的USB接收器插到jetbot 新建一个终端输入以下命令
+
+ls /dev/input
+显示如下：
+jetbot@jetbot:~$ ls /dev/input
+by-id    event0  event2  event4  event6  event8  mice    mouse3
+by-path  event1  event3  event5  event7  js0     mouse2
+
+其中的js0就是代表游戏摇杆手柄，输入如下命令测试设备是否正常工作
+
+sudo jstest /dev/input/js0
+
+Axes:  0:     0  1:     0  2:  8107  3: 18241  4:-32767  5:-32767  6:     0  7:     0 Buttons:  0:off  1:off  2:off  3:off  4:off  5:off  6:off  7:off  8:off  9Axes:  0:     0  1:     0  2:  8445  3: 18241  4:-32767  5:-32767  6:     0  7:     0 Buttons:  0:off  1:off  2:off  3:off  4:off  5:off  6:off  7:off  8:off  9Axes:  0:     0  1:     0  2:  8107  3: 18241  4:-32767  5:-32767  6:     0  7:     0 Buttons:  0:off  1:off  2:off  3:off  4:off  5:off  6:off  7:off  8:off  9:off 10:off 11:off 12:off 13:off 14:off 15:off
+遥控手柄按下不同的按键，对应的按键值会改变.
+
+【注意】如果运行命令后提示jstest命令找不到则需要运行如下命令安装对应的库。
+
+sudo apt-get install joystick
+安装joy包，并启动joy节点。要获得通过ROS发布的摇杆数据，我们需要启动joy节点。
+
+sudo apt-get install ros-melodic-joy
+rosrun joy joy_node
+显示信息如下：
+jetbot@jetbot:~$ rosrun joy joy_node
+[ERROR] [1570282089.267634203]: Couldn't open joystick force feedback!
+[ INFO] [1570282089.270998743]: Opened joystick: /dev/input/js0. deadzone_: 0.050000.
+
+新建一个终端运行如下命令显示joy节点信息
+# rosrun echo joy
+rostopic echo joy
+当按下游戏摇杆按下时，会输出类似如下的信息.
+header: 
+  seq: 1029
+  stamp: 
+    secs: 1570282260
+    nsecs: 404743018
+  frame_id: ''
+axes: [-0.0, 0.0, -0.20780374109745026, -0.5333559513092041, 0.0, 0.0, -0.0, 1.0]
+buttons: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+---
+header: 
+  seq: 1030
+  stamp: 
+    secs: 1570282260
+    nsecs: 468876680
+  frame_id: ''
+axes: [-0.0, 0.0, -0.20780374109745026, -0.5333559513092041, 0.0, 0.0, -0.0, -0.0]
+buttons: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+---
+
+其中axes[ ]表示摇杆的数据，buttons[ ]表示按键的数据。
+
+此时操作游戏手柄虽然可以显示ros发布的数据，但是要不能遥控jetbot。还需要运行teleop_joy节点，接收joy节点发布的话题信息，转换为/jetbot_motor/ cmd_str话题再发给jetbot_motors节点控制电机运动。新建一个终端运行如下命令启动终端teleop_joy节点。
+
+rosrun jetbot_ros teleop_joy.py
+安装游戏手柄的A键，然后控制上下左右方向键既可以控制jetbot移动，松开A键，jetbot则停止。
+
+修改jetbot_ros/scripts/teleop_joy.py程序中 axes[ ]和 buttons[ ] 的值可以设置不同的按键控制。
+gedit /home/jetbot/workspace/catkin_ws/src/jetbot_ros/scripts/teleop_joy.py
+
+    def callback(self, data):
+        """ Receive joystick data, formulate String message. """
+        if data.axes[7] == 1:
+            cmd="forward"
+        elif data.axes[7] == -1:
+            cmd="backward"
+        elif data.axes[6] == 1:
+            cmd="left"
+        elif data.axes[6] == -1:
+            cmd="right"
+        else:
+            cmd="stop"
+
+        if data.buttons[0] == 1:
+            self.cmd = cmd
+            rospy.loginfo(cmd)
+        else:
+            self.cmd = None
+
+
+使用摄像头实时监控
+启动jetbot_camera节点，启动jetbot摄像头视频流
+
+rosrun jetbot_ros jetbot_camera
+将会发布图像格式为sensor_msgs::Image 的话题 jetbot_camera/raw
+
+运行如下命令显示摄像头图像。
+
+rqt_image_view
+会显示如下窗口，选择话题为/jetbot_camera/raw
+
+JetBot AI Kit Manual 42.jpg
+注意：此命令需要在图形界面下运行。可以在电脑端通过虚拟机安装ubuntu系统并安装ROS.
+
+sudo apt install python3-pyqt5 pyqt5-dev-tools python3-pyqt5-dbg
+sudo -H pip3 install -U wheel
+sudo -H pip3 install -U qtgui
+Ubuntu 摄像头Could not connect to video device
+export LD_PRELOAD=/usr/lib/libv4l/v4l1compat.so
+export XLIB_SKIP_ARGB_VISUALS=1export XLIB_SKIP_ARGB_VISUALS=1
+
+git clone https://github.com/ros-visualization/rqt_image_view.git
+
+出现 No module named 'catkin_pkg'
+sudo -H pip install -U catkin_pkg
+sudo -H pip install -U rosdep rosinstall_generator wstool rosinstall six vcstools
+sudo -H pip install -U pydot
+
+git clone https://github.com/ros-visualization/rqt.git
+sudo apt install gazebo9
+sudo apt install libgazebo9-dev
+
+Jetbot 在~/.bashrc 文件最后面添加下面两行语句
+
+export ROS_HOSTNAME=jetbot.local
+export ROS_MASTER_URI=http://jetbot.local:11311
+Ubuntu 系统在 ~/.bashrc 文件最后面添加下面两行语句
+
+export ROS_HOSTNAME=ubuntu.local
+export ROS_MASTER_URI=http://jetbot.local:11311
+这样jetbot 和ubuntu虚拟机就可以通过ros节点通讯了，这样就可以在电脑端通过ubuntu虚拟机运行rqt_imge_view命令查看jetbot摄像头的实时图像了。
+
+sudo -H pip3 install --upgrade prompt-toolkit
+sudo -H pip3 install -U Flask-WTF
+sudo -H pip3 install -U jupyter_contrib_nbextensions
+sudo -H jupyter contrib nbextension install
+sudo -H pip3 install -U jupyter_nbextensions_configurator
+
+sudo -H pip install -U jupyter_contrib_nbextensions
+jupyter contrib nbextension install --user --skip-running-check  
+
+sudo update-initramfs -u -k all
+
+运行摇控小车代码
+1运行ros核心节点
+roscore
+2运行电机节点
+rosrun jetbot_ros jetbot_motors.py
+3启动joy节点
+rosrun joy joy_node
+4启动终端teleop_joy节点
+rosrun jetbot_ros teleop_joy.py
+
+
+
+使用git clone命令从仓库下载代码，如图所示，代码下载到了本地：
+git clone 链接地址.git
+如果仓库代码又了更新，这时可以使用git pull命令将更新下载到本地
+在对本地代码就行修改后，可以首先执行git status查看修改了哪些代码
+
+
+# 安装gpu使用率显示工具
+sudo apt install python3-matplotlib
+git clone https://github.com/jetsonhacks/gpuGraphTX.git
+cd gpuGraphTX && git pull
+./gpuGraph.py
+或者
+python3 gpuGraph.py
+
+下载源码
+
+mkdir gcc; cd gcc
+git init
+# 默认拔出所有头（trunk，release branches，git-only branches，其他几个SVN分支）
+git remote add origin git://gcc.gnu.org/git/gcc.git
+# 还包括所有其他SVN分支（增加约0.2GB）
+git config --add remote.origin.fetch 'refs/remotes/*:refs/remotes/svn/*'
+git fetch
+git checkout -b trunk svn/trunk
+
+
+# 开始安装
+# 1.编写升级脚步
+# 切换为root用户
+su 
+# 切换目录
+cd ~/
+# 创建并编写脚本文件
+gedit upgradeGcc.sh
+# 内文如下，按a输入模式
+#!/bin/bash
+# 进入源码目录
+cd gcc
+# 下载些组件
+#sudo ./contrib/download_prerequisites
+./contrib/download_prerequisites
+# 返回上一层目录
+cd ..
+ 
+#建立编译输出目录
+#sudo mkdir gcc-build
+mkdir gcc-build
+ 
+#进入下面目录，执行命令，生成Makefile文件
+cd gcc-build
+#sudo ../gcc/configure --enable-checking=release --enable-languages=c,c++ --disable-multilib
+../gcc/configure --enable-checking=release --enable-languages=c,c++ --disable-multilib
+ 
+#执行命令进行编译，此处利用4个job，需编译时约40分钟，此值不宜设置过高
+#sudo make -j 4
+make -j 4
+ 
+#安装
+#sudo make install
+make install
+
+@ 2.执行脚步
+chmod 777 upgradeGcc.sh
+./upgradeGcc.sh
+# 3.检测版本
+gcc -v
+# 4.头文件在哪
+/usr/local/include/c++/9.1.0
+# gcc-9.1.0安装完成
+# 存在首次安装GCC不彻底污染问题，清理后继续重新编译安装
+make distclean
+@
+
+http://mirrors.ustc.edu.cn/gnu/gcc/gcc-9.2.0/gcc-9.2.0.tar.xz
+
+
+# 安装common-lisp开发环境
+sudo apt install sbcl
+sudo apt install clisp
+
+
+sudo apt install emacs
+emacs -nw  命令行方式启动
+源码安装emacs
+需要软件makeinfo 安装
+sudo apt install texinfo
+sudo apt install libgtk2.0-dev
+sudo apt install libjpeg-dev
+sudo apt install libxpm-dev
+sudo apt install libgif-dev
+sudo apt install libtiff5-dev
+sudo apt install libiberty-dev
+sudo apt install libncurses5-dev
+sudo apt install libhogweed4 --reinstall
+sudo apt install libgmp-dev
+sudo apt install libmpfr-dev
+sudo apt install openssl
+sudo apt install libssl-dev
+sudo apt install build-essential
+# sudo apt install gnome-core-devel
+sudo apt install pkg-config
+sudo apt install devhelp
+# sudo apt install libglib2.0-doc libgtk2.0-doc
+sudo apt install glade libglade2-dev
+# sudo apt install glade-gnome glade-common glade-doc
+sudo apt install libgtk2.0*
+sudo apt install mailutils
+sudo apt install libp11-kit-dev
+sudo apt install libcurl4-gnutls-dev libcurl4-doc libgnutls28-dev libidn11-dev libkrb5-dev libldap2-dev librtmp-dev libssh2-1-dev
+sudo apt install doc-base krb5-doc libgcrypt20-doc gnutls-doc gnutls-bin krb5-user
+
+# 开始安装
+sudo ./configure
+sudo make -j 4
+sudo make install
+
+sbcl
+git clone https://git.code.sf.net/p/sbcl/sbcl
+git clone git://git.code.sf.net/p/sbcl/sbcl.git
+sudo apt install texlive
+cd sbcl && git pull
+sudo ./make.sh
+cd doc/manual && sudo make -j4
+# cd tests && sh ./run-tests.sh
+sudo ./install.sh
+
+
+cd ~/
+wget https://beta.quicklisp.org/quicklisp.lisp
+sbcl
+(load "quicklisp.lisp")
+(quicklisp-quickstart:install)
+(ql:system-apropos "vecto")
+(ql:quickload "vecto")
+(ql:add-to-init-file)
+(quit)
+升级
+(ql:update-client)
+(ql:update-dist "quicklisp")
+
+(ql:quickload "quicklisp-slime-helper")
+
+新建文件并添加下面的内容 
+gedit ~/.emacs
+
+(load (expand-file-name "~/quicklisp/slime-helper.el"))
+  ;; Replace "sbcl" with the path to your implementation
+(setq inferior-lisp-program "sbcl")
+
+(slime)
+
+
+(ql:quickload "mcclim")
+提示安装成功
+测试
+(asdf:oos 'asdf:load-op :clim-examples)
+(in-package :clim-demo)
+(demodemo)
+成功显示示例
+
+安装文本处理正则表达式
+(ql:quickload :cl-ppcre)
+测试功能
+(asdf:oos 'asdf:test-op :cl-ppcre)
+
+
+
+
+# 需要4G swap扩一下内存
+git clone https://github.com/JetsonHacksNano/installSwapfile.git
+cd installSwapfile && git pull
+sudo ./installSwapfile.sh -s 4
+
+
+# 源码安装xz
+git clone https://git.tukaani.org/xz.git
+cd xz && git pull
+./autogen.sh 
+./configure
+make -j 4
+sudo make install
+
+tar -zxvf xz-5.2.4.tar.gz
+cd xz-5.2.4/
+sudo ./configure
+sudo make -j 4
+sudo make install
+
+压缩命令
+tar -cf lianxi.tar lianxi/
+xz -T0 -z lianxi.tar
+
+对于 tar.xz结尾的压缩文件，解压有两种方式：
+1.可以先将外层用xz解压方式解压,，然后里层用tar解压方式解压：
+xz -d  *****.tar.xz
+tar  -xvf    *****.tar
+2.直接使用如下命令解压：
+tar   xvJf   ***.tar.xz
+
+
+参考https://blog.csdn.net/wf19930209/article/details/95332984
+一、检查NVIDIA驱动是否安装成功
+打开终端执行：
+
+nvidia-smi
+
+玩转Jetson Nano（二）检查已安装组件
+ 3. 检查已经安装的系统组件
+Jetson-nano的OS镜像已经自带了JetPack，cuda，cudnn，opencv等都已经安装好，并有例子，这些例子安装路径如下所示
+
+TensorRT	/usr/src/tensorrt/samples/
+CUDA	/usr/local/cuda-/samples/
+cuDNN	/usr/src/cudnn_samples_v7/
+Multimedia API	/usr/src/tegra_multimedia_api/
+VisionWorks	/usr/share/visionworks/sources/samples/ /usr/share/visionworks-tracking/sources/samples/ /usr/share/visionworks-sfm/sources/samples/
+OpenCV	/usr/share/OpenCV/samples
+
+# 检查CUDA
+Jetson-nano中已经安装了CUDA10.0版本，但是此时你如果运行 nvcc -V是不会成功的，需要你把CUDA的路径写入环境变量中。OS中自带gedit工具 ，所以运行下面的命令编辑环境变量
+sudo gedit  ~/.bashrc
+# 在最后添加
+export CUBA_HOME=/usr/local/cuda-10.0
+export LD_LIBRARY_PATH=/usr/local/cuda-10.0/lib64:$LD_LIBRARY_PATH
+export PATH=/usr/local/cuda-10.0/bin:$PATH
+# 对了最后别忘了source一下这个文件。
+source ~/.bashrc
+# 进入root用户下也重复下上面的添加
+检查CUDA是否安装成功
+打开终端执行：
+
+nvcc --version
+
+nvcc: NVIDIA (R) Cuda compiler driver
+Copyright (c) 2005-2019 NVIDIA Corporation
+Built on Wed_Apr_24_19:10:27_PDT_2019
+Cuda compilation tools, release 10.1, V10.1.168
+
+说明CUDA的命令已经安装成功。接下来测试案例是否能够正常运行。
+
+#编译并测试设备 deviceQuery：
+cd /usr/local/cuda-10.0/samples/1_Utilities/deviceQuery
+sudo make
+./deviceQuery
+
+deviceQuery, CUDA Driver = CUDART, CUDA Driver Version = 10.0, CUDA Runtime Version = 10.0, NumDevs = 1
+Result = PASS
+
+#编译并测试带宽 bandwidthTest：
+cd ../bandwidthTest
+sudo make
+./bandwidthTest
+
+Result = PASS
+NOTE: The CUDA Samples are not meant for performance measurements. Results may vary when GPU Boost is enabled.
+
+# 检查OpenCV如果OpenCv安装就绪，会显示版本号
+pkg-config opencv --modversion
+# 检查cuDNN
+cd /usr/src/cudnn_samples_v7/mnistCUDNN   #进入例子目录
+sudo make     #编译一下例子
+sudo chmod a+x mnistCUDNN # 为可执行文件添加执行权限
+./mnistCUDNN # 执行
+# 如果成功，如下所示
+# Result of classification: 1 3 5
+# Test passed!
+# 
+
+玩转Jetson Nano（三）安装TensorFlow GPU
+用文件批量安装
+sudo ./Install-tensorflow.sh
+
+###########A
+今天的目标是安装TensorFlow GPU版本，安装TensorFlow GPU版本需要成功配置好CUDA，没有配制好的请移步上一篇博文。不过在安装TensorFlow GPU之前，有一些机器学习必须用到的安装包也需要来安装一下。
+
+
+2. 安装那些机器学习领域如雷贯耳的包
+sudo apt install python3-numpy
+# sudo -H pip3 install numpy==1.16.0   #版本太高报错，安装个低版本的，不知道numpy是干啥的？机器学习这个领域不适合你
+sudo apt install python3-scipy
+sudo apt install python3-pandas
+sudo apt install python3-matplotlib
+sudo apt install python3-sklearn
+3. 安装TensorFlow GPU版
+ （1）确认CUDA已经被正常安装
+如果不能正确调用，参考这里重新安装下https://www.cnblogs.com/pertor/p/8733010.html
+nvcc -V
+如果能看到CUDA版本号，即为正确安装
+解决sudo下nvcc找不到问题
+
+若非sudo下可以找到nvcc，而sudo下找不到
+则解决方法为建立软链
+
+先寻找nvcc位置
+
+which nvcc
+
+得到路径后，建立软链接
+
+sudo ln -s /usr/local/cuda-10.0/bin/nvcc /sbin/nvcc   #path是上一步得到的位置
+sudo ln -s /usr/local/cuda-10.0/bin/nvcc /bin/nvcc
+重新查询
+
+sudo nvcc -V
+
+即可输出nvcc版本号
+（2）安装所需要的包
+
+sudo apt install python3-pip libhdf5-serial-dev hdf5-tools
+sudo -H pip3 install -U numpy grpcio absl-py py-cpuinfo psutil portpicker grpcio six mock requests gast h5py astor termcolor setuptools
+（3）安装TensorFlow GPU版本 
+
+sudo -H pip3 install -U launchpadlib
+
+cd ~/git
+wget -c https://developer.download.nvidia.cn/compute/redist/jp/v42/tensorflow-gpu/tensorflow_gpu-1.14.0+nv19.9-cp36-cp36m-linux_aarch64.whl
+
+sudo -H pip3 install tensorflow_gpu-1.14.0+nv19.9-cp36-cp36m-linux_aarch64.whl
+
+
+直接跑tensorflow和pytorch的模型速度肯定是不行了，学习一波trt吧。
+
+tensorflow使用trt的流程：训练模型得到.ckpt文件——>>冻结模型——>>.pb文件——>>转换文tensorRT模型，pytorch使用trt流程：训练模型——>>tensorRT模型，用到的包：tensorrt，uff，pycuda，前两个不用装，nano自带，装pycuda，直接pip3 install pycuda最终在setup这一步出错了。后来翻了很多资料终于装上了！！
+
+
+sudo -H pip3 install -U pycuda
+
+
+这下可以研究怎么用tensorrt了。
+
+先安装testresource库
+4. 安装Keras
+既然有了TensorFlow，那就把Keras也安装上。我自己很喜欢keras，让TensorFlow变得更加简单
+
+sudo -H pip3 install -U keras
+安装完成后import验证
+
+python3
+import numpy
+import tensorflow
+from tensorflow import keras
+安装完成后，进入python3，检查一下安装成果，
+import keras
+下方提示using TensorFlow backend
+就证明Keras安装成功并使用TensorFlow作为backend。
+
+
+
+
+
+
+
+
+
+
+玩转Jetson Nano（四）跑通jetson-inference
+（二）下载和编译
+
+剩下的过程就比较简单了。首先如果您没有安装git和cmake，先安装它们
+apt-cache search glew
+sudo apt install git cmake
+sudo apt install fonts-glewlwyd glew-utils glewlwyd glewlwyd-common libglew-dev libglew2.0 libglewmx1.13
+接着从git上克隆jetson-inference repo
+
+git clone https://github.com/dusty-nv/jetson-inference
+cd jetson-inference
+git submodule update --init
+git pull
+配置cmake，如果您科学上网没问题的话，会自动下载许多模型。
+
+mkdir build    #创建build文件夹
+cd build       #进入build
+
+复制网上下载的文件到build和jetson-inference/data/networks文件夹里
+
+cmake ../      #运行cmake，它会自动执行上一级目录下面的 CMakePrebuild.sh
+下载选项选否，其它按回车就好，警告不用管，不报错停止就行
+
+cmake成功后，就需要编译了			
+make -j 4
+sudo make install
+如果编译成功，会生成下列文件夹结构
+
+|-build
+   \aarch64		    (64-bit)
+      \bin			where the sample binaries are built to
+      \include		where the headers reside
+      \lib			where the libraries are build to
+   \armhf           (32-bit)
+      \bin			where the sample binaries are built to
+      \include		where the headers reside
+      \lib			where the libraries are build to
+（三）测试
+
+进入测试文件夹，运行
+
+cd jetson-inference/build/aarch64/bin
+./imagenet-console orange_0.jpg output_0.jpg
+imagenet-console
+  args (3):  0 [./imagenet-console]  1 [orange_0.jpg]  2 [output_0.jpg]  
+.........
+..........
+class 0950 - 0.978909  (orange)
+class 0951 - 0.020962  (lemon)
+imagenet-console:  'orange_0.jpg' -> 97.89090% class #950 (orange)
+loaded image  fontmapA.png  (256 x 512)  2097152 bytes
+[cuda]  cudaAllocMapped 2097152 bytes, CPU 0x1048a0000 GPU 0x1048a0000
+[cuda]  cudaAllocMapped 8192 bytes, CPU 0x100f62000 GPU 0x100f62000
+imagenet-console:  attempting to save output image to 'output_0.jpg'
+imagenet-console:  completed saving 'output_0.jpg'
+
+测试人脸
+解压下载文件到如下路径
+networks/SSD-Mobilenet-v2/ssd_mobilenet_v2_coco.uff
+
+./detectnet-console peds_0.jpg output_001.jpg facenet
+
+
+
+玩转Jetson Nano（五）跑通yolov3
+yoloV3也是一个物品检测的小程序，而且搭建起来比较简单。这里要申明，本文用的是yoloV3的tiny版，正式版和tiny版安装的方法都是一样的，只是运行时的配置文件和权重文件不一样。我曾经试图跑正式版，但是跑不起来，基本上到第二次卷积就挂掉了，毕竟nano只有4G内存。
+
+闲话少说，开始安装。
+
+1. 安装CUDA，OpenCV，cuDNN
+
+不说了，如果没安装的请看前文吧。
+
+2. 下载
+
+git clone https://github.com/pjreddie/darknet.git
+3. 配置
+
+cd darknet && git pull
+gedit Makefile   #修改Makefile
+4.  将Makefile的前三行修改一下
+
+GPU=1
+CUDNN=1
+OPENCV=1
+5.  编译
+
+make -j4
+
+
+6. 下载权重文件，这里直接下载tiny版的权重文件
+
+wget https://pjreddie.com/media/files/yolov3-tiny.weights
+ 7.  测试
+
+./darknet detect cfg/yolov3-tiny.cfg yolov3-tiny.weights data/dog.jpg
+layer     filters    size              input                output
+    0 conv     16  3 x 3 / 1   416 x 416 x   3   ->   416 x 416 x  16  0.150 BFLOPs
+    1 max          2 x 2 / 2   416 x 416 x  16   ->   208 x 208 x  16
+    2 conv     32  3 x 3 / 1   208 x 208 x  16   ->   208 x 208 x  32  0.399 BFLOPs
+    3 max          2 x 2 / 2   208 x 208 x  32   ->   104 x 104 x  32
+    4 conv     64  3 x 3 / 1   104 x 104 x  32   ->   104 x 104 x  64  0.399 BFLOPs
+    5 max          2 x 2 / 2   104 x 104 x  64   ->    52 x  52 x  64
+    6 conv    128  3 x 3 / 1    52 x  52 x  64   ->    52 x  52 x 128  0.399 BFLOPs
+    7 max          2 x 2 / 2    52 x  52 x 128   ->    26 x  26 x 128
+    8 conv    256  3 x 3 / 1    26 x  26 x 128   ->    26 x  26 x 256  0.399 BFLOPs
+    9 max          2 x 2 / 2    26 x  26 x 256   ->    13 x  13 x 256
+   10 conv    512  3 x 3 / 1    13 x  13 x 256   ->    13 x  13 x 512  0.399 BFLOPs
+   11 max          2 x 2 / 1    13 x  13 x 512   ->    13 x  13 x 512
+   12 conv   1024  3 x 3 / 1    13 x  13 x 512   ->    13 x  13 x1024  1.595 BFLOPs
+   13 conv    256  1 x 1 / 1    13 x  13 x1024   ->    13 x  13 x 256  0.089 BFLOPs
+   14 conv    512  3 x 3 / 1    13 x  13 x 256   ->    13 x  13 x 512  0.399 BFLOPs
+   15 conv    255  1 x 1 / 1    13 x  13 x 512   ->    13 x  13 x 255  0.044 BFLOPs
+   16 yolo
+   17 route  13
+   18 conv    128  1 x 1 / 1    13 x  13 x 256   ->    13 x  13 x 128  0.011 BFLOPs
+   19 upsample            2x    13 x  13 x 128   ->    26 x  26 x 128
+   20 route  19 8
+   21 conv    256  3 x 3 / 1    26 x  26 x 384   ->    26 x  26 x 256  1.196 BFLOPs
+   22 conv    255  1 x 1 / 1    26 x  26 x 256   ->    26 x  26 x 255  0.088 BFLOPs
+   23 yolo
+Loading weights from yolov3-tiny.weights...Done!
+data/dog.jpg: Predicted in 0.239507 seconds.
+dog: 56%
+car: 52%
+truck: 56%
+car: 62%
+bicycle: 58%
+
+
+
+
+
+jetson nano入门（四）pytorch安装
+https://github.com/pytorch/pytorch
+
+conda install numpy ninja pyyaml mkl mkl-include setuptools cmake cffi typing
+# Add LAPACK support for the GPU if needed
+conda install -c pytorch magma-cuda90 # or [magma-cuda92 | magma-cuda100 | magma-cuda101 ] depending on your cuda version
+git clone --recursive https://github.com/pytorch/pytorch
+cd pytorch
+# if you are updating an existing checkout
+git submodule sync
+git submodule update --init --recursive
+export CMAKE_PREFIX_PATH=${CONDA_PREFIX:-"$(dirname $(which conda))/../"}
+python3 setup.py install
+
+python3.6版本的朋友：
+
+1.wget -c https://nvidia.box.com/shared/static/veo87trfaawj5pfwuqvhl6mzc5b55fbj.whl -O torch-1.2.0a0+8554416-cp36-cp36m-linux_aarch64.whl
+
+2.sudo -H pip3 install -U numpy torch-1.2.0a0+8554416-cp36-cp36m-linux_aarch64.whl
+# sudo -H pip3 install -U pycuda
+结束，是不是很方便！
+
+# 安装完了，验证一下吧
+python3
+import torch
+print(torch.__version__)
+print('CUDA available: ' + str(torch.cuda.is_available()))
+a = torch.cuda.FloatTensor(2).zero_()
+print('Tensor a = ' + str(a))
+b = torch.randn(2).cuda()
+print('Tensor b = ' + str(b))
+c = a + b
+print('Tensor c = ' + str(c))
+
+
+安装完了torch是不是torchvision也应该安装一下
+# 安装一些必要的包
+sudo apt install libjpeg-dev zlib1g-dev
+ 
+# 下载torchvision
+git clone -b v0.3.0 https://github.com/pytorch/vision torchvision
+ 
+# 安装torchvision失败
+cd torchvision && git pull
+修改下文件
+
+sudo gedit /usr/local/cuda-10.0/bin/nvcc.profile
+# TOP是cuda的路径，但是用默认的相对路径不是/usr/local/cuda，而是/usr/local/bin/
+# TOP              = $(_HERE_)/..
+# 所以这里TOP直接指定cuda路径，便会正确
+TOP = /usr/local/cuda
+
+sudo gedit 出错的.h
+#include </usr/local/cuda/include/cuda.h>
+#include </usr/local/cuda-10.0/targets/aarch64-linux/include/cuda_runtime_api.h>
+# sudo ln -s /usr/local/cuda-10.0/bin/nvcc /bin/nvcc   如果前面已经执行这里就不用执行了
+
+sudo python3 setup.py install
+# 最后测试一下torchvision
+python3
+import torchvision
+print(torchvision.__version__) 
+
+
+
+
+
+
+
+玩转Jetson Nano（六）安装caffe
+进入正文之前先说一个心得，昨天训练一个人脸识别模型，发现不一会就OOM异常，就是资源耗尽的异常。运行free -m一看，我的天啊，free内存只有不到400M。想了很多办法都不行，后来直接把ubuntu的桌面禁用，效果感人啊！！内存从300多M一下子到了3.3G有木有！！！
+
+beckhans@Jetson:~$ free -h
+              total        used        free      shared  buff/cache   available
+Mem:           3.9G        335M        3.3G         17M        234M        3.4G
+Swap:            0B          0B          0B
+# ubuntu关闭图形用户界面
+sudo systemctl set-default multi-user.target
+sudo reboot
+ 
+# ubuntu启用图形用户界面
+sudo systemctl set-default graphical.target
+sudo reboot
+（一）准备工作
+
+在写本文之前我层N次安装caffe失败，都留下阴影了。好几次都想不用算了，但是caffe的例子实在是多，欲罢不能，硬着头皮趟出一条路。
+
+1. 安装CUDA，cuDNN，以及OpenCV，nano已经将这些安装好了，但是需要配置一下，如何配置请看前文吧。下面列出如何检查这三样成功安装
+
+ # 检查CUDA
+nvcc -V    
+ 
+ # 检查opencv
+pkg-config opencv --modversion
+ 
+ 
+# 检查cuDNN
+cd /usr/src/cudnn_samples_v7/mnistCUDNN   #进入例子目录
+sudo make -j 4     #编译一下例子
+sudo chmod a+x mnistCUDNN # 为可执行文件添加执行权限
+./mnistCUDNN # 执行
+
+3.安装依赖包
+
+sudo apt install libprotobuf-dev libleveldb-dev libsnappy-dev libopencv-dev libhdf5-serial-dev protobuf-compiler
+ 
+sudo apt install --no-install-recommends libboost-all-dev
+ 
+sudo apt install libopenblas-dev liblapack-dev libatlas-base-dev
+ 
+sudo apt install libgflags-dev libgoogle-glog-dev liblmdb-dev
+ 
+sudo apt install git cmake build-essential
+
+
+sudo -H pip3 install -U scikit-image
+（二）开始安装caffe
+
+
+第 3 步：安装依赖项
+Caffe 依赖于多个库，您应该从您系统的数据包管理器获得这些库。
+
+在 Ubuntu 14.04 中，将使用以下命令安装必要的库：
+
+$ sudo apt install libprotobuf-dev libleveldb-dev libsnappy-dev libopencv-dev libhdf5-serial-dev protobuf-compiler libgflags-dev libgoogle-glog-dev liblmdb-dev libatlas-base-dev git
+
+$ sudo apt install --no-install-recommends libboost-all-dev
+
+安装依赖
+sudo apt install libturbojpeg
+sudo ln -s /usr/lib/aarch64-linux-gnu/libturbojpeg.so.0.1.0 /usr/lib/aarch64-linux-gnu/libturbojpeg.so
+
+sudo apt install libturbojpeg0-dev
+sudo apt install -y python-pip
+sudo apt install -y python-opencv
+sudo apt install kate
+
+sudo -H pip3 install -U scikit-image
+第 4 步：安装 NCCL
+在多个 GPU 上运行 Caffe 需要使用 NVIDIA NCCL。可使用以下命令安装 NCCL：
+
+$ git clone https://github.com/NVIDIA/nccl.git
+$ cd nccl && git pull
+$ sudo make install -j4
+$ sudo ldconfig
+
+wget -c https://github.com/NVIDIA/nccl/archive/v2.4.8-1.tar.gz
+mv v2.4.8-1.tar.gz nccl.v2.4.8-1.tar.gz
+tar -zxf nccl.v2.4.8-1.tar.gz
+cd nccl-2.4.8-1
+sudo make install -j4
+sudo ldconfig
+NCCL 库和文件头将安装在 /usr/local/lib 和 /usr/local/include 中。
+
+
+第 5 步：安装 Caffe
+我们建议安装 NVIDIA 发布的新版 Caffe，请访问 https://github.com/NVIDIA/caffe/releases 获取新版本。截至发稿时，超级新版本为 0.15.9。
+git clone https://github.com/BVLC/caffe.git
+git clone https://github.com/NVIDIA/caffe.git
+$ wget -c https://github.com/NVIDIA/caffe/archive/v0.17.3.tar.gz
+
+$ tar -zxf v0.17.3.tar.gz
+
+$ cd caffe-0.17.3
+
+$ cp Makefile.config.example Makefile.config
+
+在文本编辑器中打开新创建的 Makefile.config，然后进行以下更改：
+gedit Makefile.config
+# 将下面三句前面的注释符号去掉
+USE_CUDNN := 1        #这可以启用 cuDNN 加速。
+# USE_NCCL := 1         #暂时不要打开，不然nano会编译失败，这可以启用在多个 GPU 上运行 Caffe 所需的 NCCL。
+OPENCV_VERSION := 3   
+WITH_PYTHON_LAYER := 1
+
+
+
+# 修改路径，注释掉原来的，换成新的
+#INCLUDE_DIRS := $(PYTHON_INCLUDE) /usr/local/include
+#LIBRARY_DIRS := $(PYTHON_LIB) /usr/local/lib /usr/lib 
+INCLUDE_DIRS := $(PYTHON_INCLUDE) /usr/local/include /usr/include/hdf5/serial
+LIBRARY_DIRS := $(PYTHON_LIB) /usr/local/lib /usr/lib /usr/lib/aarch64-linux-gnu /usr/lib/aarch64-linux-gnu/hdf5/serial
+
+把py2.7的改成py3.6
+
+# 编译caffe进行make runtest遇到caffe error == cudaSuccess (48 vs. 0)的问题
+# 针对的板卡平台为Jetson TX1和Jetson Nano，cuda分别为CUDA9.0和CUDA10.0。
+# 将下面这段话中20和21那部分删掉，添加一行53如下
+CUDA_ARCH := -gencode arch=compute_30,code=sm_30 \
+                -gencode arch=compute_35,code=sm_35 \
+                -gencode arch=compute_50,code=sm_50 \
+                -gencode arch=compute_52,code=sm_52 \
+                -gencode arch=compute_53,code=sm_53 \
+                -gencode arch=compute_60,code=sm_60 \
+                -gencode arch=compute_61,code=sm_61 \
+                -gencode arch=compute_61,code=compute_61 
+# 为什么添加这么一行，是因为我发现TX1和Nano的GPU的算力能力都是5.3，所以这么做了，结果发现可以解决这个错误，哈哈。
+# 这个报错应该和GPU的算力能力有关系，注意先到官网查看自己GPU平台算力再做相应修改。
+# 48 error = cudaSucess (48 vs. 0) no kernel image is available for execution on the device 
+# cuda 9.0以上不支持计算能为小于3的显卡,换cuda 8.0就可以了。
+
+
+修改 caffe 目录下的 Makefile 文件：
+gedit Makefile
+在Makefile文件的第197行，把 hdf5_hl 和hdf5修改为hdf5_serial_hl 和 hdf5_serial
+# 这一句在185行
+LIBRARIES += glog gflags protobuf boost_system boost_filesystem m hdf5_serial_hl hdf5_serial
+
+
+# 这一句在443行
+NVCCFLAGS += -D_FORCE_INLINES -ccbin=$(CXX) -Xcompiler -fPIC $(COMMON_FLAGS)
+ 
+
+
+保存并关闭文件。现在，您可以编译 Caffe 了。
+
+
+清理编译
+
+make clean
+
+重新编译，4个线程
+
+$ make all -j4
+# 完成此命令后，您会在 build/tools/caffe 中获得 Caffe 二进制文件。
+make test -j4
+make runtest -j4
+make pycaffe -j4
+
+sudo echo export PYTHONPATH="~/git/caffe/python" >> ~/.bashrc
+source ~/.bashrc
+su
+echo export PYTHONPATH="/home/jetbot/git/caffe/python" >> ~/.bashrc
+source ~/.bashrc
+su jetbot
+
+python3
+import caffe
+print(caffe.__version__)
+
+# 如果报错，删除python/caffe/下的.pyc临时文件
+Traceback (most recent call last):
+  File "<stdin>", line 1, in <module>
+ModuleNotFoundError: No module named 'caffe'
+
+
+
+
+10、安装 pycaffe notebook 接口环境
+在上一步成功安装 caffe 之后，就可以通过 caffe 去做训练数据集或者预测各种相关的事了，只不过需要在命令行下通过 caffe 命令进行操作，而这一步 pycaffe 的安装以及 notebook 环境配置只是为了更方便的去使用 caffe ，实际上大多数都是通过 python 来操作 caffe 的，而 notebook 使用浏览器作为界面，可以更方便的编写和执行 python 代码。
+
+首先编译 pycaffe :
+
+# cd caffe
+
+# make pycaffe -j4
+
+
+
+编译 pycaffe 成功后，验证一下是否可以在 python 中导入 caffe 包，首先进入 python 环境：
+
+python
+
+然后导入 caffe :
+
+>>> import caffe
+
+
+
+ok，最后一步，配置notebook环境
+
+首先要安装python接口依赖库，在caffe根目录的python文件夹下，有一个requirements.txt的清单文件，上面列出了需要的依赖库，按照这个清单安装就可以了。
+
+在安装scipy库的时候，需要fortran编译器（gfortran)，如果没有这个编译器就会报错，因此，我们可以先安装一下。
+
+首先进入 caffe 目录下，执行安装代码：
+
+sudo apt install gfortran
+su
+# for req in $(cat python/requirements.txt); do pip3 install --user $req; done
+for req in $(cat python/requirements.txt); do sudo -H pip3 install -U $req; done
+安装完成以后执行：
+
+# pip3 install -r --user python/requirements.txt
+sudo -H pip3 install -r python/requirements.txt
+就会看到，安装成功的，都会显示Requirement already satisfied, 没有安装成功的，会继续安装。
+
+然后安装 jupyter ：
+
+sudo -H pip3 install -U jupyter
+
+安装完成后运行 notebook :
+
+jupyter notebook
+
+或
+
+ipython notebook
+
+就会在浏览器中打开notebook, 点击右上角的New-python2, 就可以新建一个网页一样的文件，扩展名为ipynb。在这个网页上，我们就可以像在命令行下面一样运行python代码了。输入代码后，按shift+enter运行，更多的快捷键，可点击上方的help-Keyboard shortcuts查看，或者先按esc退出编辑状态，再按h键查看。
+
+Caffe学习系列(9)：运行caffe自带的两个简单例子
+为了程序的简洁，在caffe中是不带练习数据的，因此需要自己去下载。但在caffe根目录下的data文件夹里，作者已经为我们编写好了下载数据的脚本文件，我们只需要联网，运行这些脚本文件就行了。
+
+注意：在caffe中运行所有程序，都必须在根目录下进行，否则会出错
+
+1、mnist实例
+
+mnist是一个手写数字库，由DL大牛Yan LeCun进行维护。mnist最初用于支票上的手写数字识别, 现在成了DL的入门练习库。征对mnist识别的专门模型是Lenet，算是最早的cnn模型了。
+
+mnist数据训练样本为60000张，测试样本为10000张，每个样本为28*28大小的黑白图片，手写数字为0-9，因此分为10类。
+
+首先下载mnist数据，假设当前路径为caffe根目录
+
+# sudo sh data/mnist/get_mnist.sh
+运行成功后，在 data/mnist/目录下有四个文件：
+
+train-images-idx3-ubyte:  训练集样本 (9912422 bytes) 
+train-labels-idx1-ubyte:  训练集对应标注 (28881 bytes) 
+t10k-images-idx3-ubyte:   测试集图片 (1648877 bytes) 
+t10k-labels-idx1-ubyte:   测试集对应标注 (4542 bytes)
+
+这些数据不能在caffe中直接使用，需要转换成LMDB数据
+
+# sudo sh examples/mnist/create_mnist.sh
+如果想运行leveldb数据，请运行 examples/siamese/ 文件夹下面的程序。 examples/mnist/ 文件夹是运行lmdb数据
+
+转换成功后，会在 examples/mnist/目录下，生成两个文件夹，分别是mnist_train_lmdb和mnist_test_lmdb，里面存放的data.mdb和lock.mdb，就是我们需要的运行数据。
+
+接下来是修改配置文件，如果你有GPU且已经完全安装好，这一步可以省略，如果没有，则需要修改solver配置文件。
+
+需要的配置文件有两个，一个是lenet_solver.prototxt，另一个是train_lenet.prototxt.
+
+首先打开lenet_solver_prototxt
+
+# sudo vi examples/mnist/lenet_solver.prototxt
+根据需要，在max_iter处设置最大迭代次数，以及决定最后一行solver_mode,是否要改成CPU
+
+保存退出后，就可以运行这个例子了
+
+# sudo time sh examples/mnist/train_lenet.sh
+CPU运行时候大约13分钟，GPU运行时间大约4分钟，GPU+cudnn运行时候大约40秒，精度都为99%左右
+# 测试模型 
+sudo ./build/tools/caffe.bin test -model=examples/mnist/lenet_train_test.prototxt -weights=examples/mnist/lenet_iter_10000.caffemodel -iterations=100
+2、cifar10实例
+
+cifar10数据训练样本50000张，测试样本10000张，每张为32*32的彩色三通道图片，共分为10类。
+
+下载数据：
+
+# sudo sh data/cifar10/get_cifar10.sh
+运行成功后，会在 data/cifar10/文件夹下生成一堆bin文件
+
+转换数据格式为lmdb：
+
+# sudo sh examples/cifar10/create_cifar10.sh
+转换成功后，会在 examples/cifar10/文件夹下生成两个文件夹，cifar10_train_lmdb和cifar10_test_lmdb, 里面的文件就是我们需要的文件。
+
+为了节省时间，我们进行快速训练（train_quick)，训练分为两个阶段，第一个阶段（迭代4000次）调用配置文件cifar10_quick_solver.prototxt, 学习率（base_lr)为0.001
+
+第二阶段（这里要修改迭代1000次）调用配置文件cifar10_quick_solver_lr1.prototxt, 学习率(base_lr)为0.0001
+
+前后两个配置文件就是学习率(base_lr)和最大迭代次数（max_iter)不一样，其它都是一样。如果你对配置文件比较熟悉以后，实际上是可以将两个配置文件合二为一的，设置lr_policy为multistep就可以了。
+
+复制代码
+base_lr: 0.001
+momentum: 0.9
+weight_decay: 0.004
+lr_policy: "multistep"
+gamma: 0.1
+stepvalue: 4000
+stepvalue: 5000
+复制代码
+运行例子：
+
+# sudo time sh examples/cifar10/train_quick.sh
+GPU+cudnn大约45秒左右，精度75%左右。
+
+
+
+查找文件
+安装查找功能
+sudo apt install mlocate
+更新数据
+sudo updatedb
+开始查找
+locate hdf5.h
+
+
+
+
+
+安装多线程下载软件，支持断点下载，wget支持断点加-c
+包地址：http://pkgs.repoforge.org/axel/
+sudo apt install axel
+
+主要参数
+-n x：启动x个线程下载
+
+-s x：最大速度（byte/s）为x
+
+-o f：指定输出文件
+
+-S [x]：搜索境像并且从指定的x服务器（可以是多个）下载
+
+-U x：设置user agent
+
+-N：不合用代理服务器
+
+-q：静默退出
+
+-v：更多状态信息
+
+-h：帮助信息
+
+-v：版本
+--max-speed = x -s x指定最大速度（每秒字节数）
+--num-connections = x -n x指定最大连接数
+--max-redirect = x指定最大重定向数
+--output = f -o f指定本地输出文件
+--search [= n] -S [n]搜索镜像并从n个服务器下载
+--ipv4 -4使用IPv4协议
+--ipv6 -6使用IPv6协议
+--header = x -H x添加HTTP标头字符串
+--user-agent = x -U x设置用户代理
+--no-proxy -N只是不要使用任何代理服务器
+--insecure -k不验证SSL证书
+--no-clobber -c如果文件已存在则跳过下载
+--quiet -q单独留下stdout
+--verbose -v更多状态信息
+--alternate -a替代进度指示器
+--help -h这个信息
+--timeout = x -T x设置I / O和连接超时
+--version -V版本信息
+
+
+
+
+断点续传
+直接再次执行下载命令，自动从上次下载的位置开始下载
+
+示例
+$ axel -n 10 http://xxx.xxx.xxx.xxx/xxx.xxx
+
+
+
+解压lz文件
+sudo apt install lzip
+
+
+安装编译依赖包
+sudo apt install nasm
+
+
+输入命令
+
+cat /proc/version
+
+显示如下
+
+Linux version 4.10.0-28-generic (buildd@lgw01-12)         linux内核版本号
+
+gcc version 5.4.0                                                                 gcc编译器版本号
+
+Ubuntu 5.4.0-6ubuntu1                                                      Ubuntu版本号
+
+输入命令
+
+uname -a
+
+显示linux的内核版本和系统是多少位的：X86_64代表系统是64位的。
+
+输入命令
+
+lsb_release -a
+
+显示如下
+
+Distributor ID: Ubuntu                           //类别是ubuntu
+
+Description:  Ubuntu 16.04.3 LTS          //16年3月发布的稳定版本，LTS是Long Term Support：长时间支持版本，支持周期长达三至五年
+
+Release:    16.04                                    //发行日期或者是发行版本号
+
+Codename:   xenial                               //ubuntu的代号名称
+
+
+
+
+其他一些命令
+sudo apt update  更新源
+sudo apt install package 安装包
+sudo apt remove package 删除包
+sudo apt-cache search package 搜索软件包
+sudo apt-cache show package  获取包的相关信息，如说明、大小、版本等
+sudo apt install package --reinstall  重新安装包
+sudo apt -f install  修复安装
+sudo apt remove package --purge 删除包，包括配置文件等
+sudo apt build-dep package 安装相关的编译环境
+sudo apt upgrade 更新已安装的包
+sudo apt dist-upgrade 升级系统
+sudo apt-cache depends package 了解使用该包依赖那些包
+sudo apt-cache rdepends package 查看该包被哪些包依赖
+sudo apt source package  下载该包的源代码
+sudo apt clean && sudo apt autoclean 清理无用的包
+sudo apt check 检查是否有损坏的依赖
+
+sudo apt install subversion
+sudo apt install libgmp-dev
+sudo apt install libmpfr-dev
+
+
+sudo apt-cache search package libunistring
+sudo apt install libunistring-dev
+
+
+
+
+
+
+
+
+
+显示gpio当前数据
+
+gpio readall
+
+
+https://my.oschina.net/freeblues/blog/196902
+
+
+
+(defun sh (cmd)
+    #+clisp
+        (let ((str (ext:run-shell-command cmd :output:stream)))
+            (loop for line = (read-line str nil)
+             until (null line)
+             do (print line)))
+    #+ecl 
+        (si:system cmd)
+    #+sbcl 
+        (sb-ext:run-program "/bin/sh" (list "-c" cmd) :input nil :output *standard-output*)
+    #+clozure 
+        (ccl:run-program "/bin/sh" (list "-c" cmd) :input nil :output *standard-output*))
+
+
+
+
+实际举个例子，就以 CCL 为例好了：
+
+
+CL-USER> (ccl:run-program "/bin/sh" (list "-c" "echo 123") :input nil :output *standard-output*)
+123
+#<EXTERNAL-PROCESS (/bin/sh -c echo 123)[2596] (EXITED : 0) #x30200197619D>
+CL-USER>
+
+
+
+控制gpio示例
+
+导出引脚
+(导出引脚 11)
+
+
+设置为输出模式
+(引脚模式 11 out)
+
+设置为输入模式
+(引脚模式 11 in)
+
+设置为高电平
+(写引脚 11 1)
+
+设置为低电平
+(写引脚 11 0)
+
+关闭引脚
+(关引脚 11)
+
+读取引脚值
+
+(读引脚 11)
+
+
+
+(defun 初始化 ()
+	(导出引脚 13)
+	(引脚模式 13 "out")
+	(导出引脚 19)
+	(引脚模式 19 "out")
+	(导出引脚 20)
+	(引脚模式 20 "out"))
+
+
+
+(defun 闪灯 (int)
+	(dotimes (x int)
+	(写引脚 13 1)
+	(sleep 0.5)
+	(写引脚 13 0)
+	(sleep 0.5)
+	(写引脚 19 1)
+	(sleep 0.5)
+	(写引脚 19 0)
+	(sleep 0.5)
+	(写引脚 20 1)
+	(sleep 0.5)
+	(写引脚 20 0)
+	(sleep 0.5)))
+
+
+(defun 关引脚 ()
+	(关引脚 13)
+	(关引脚 19)
+	(关引脚 20))
+
+
+(defmacro 导出引脚 (pin)
+  (let ((in (gensym)))
+    `(with-open-file (,in "/sys/class/gpio/export" :direction :output :if-exists :overwrite)
+      (format ,in "~A" ,pin))))
+
+
+(defmacro 引脚模式 (pin mode)
+  (let ((in (gensym)))
+    `(with-open-file (,in (format nil "~a~a~a" "/sys/class/gpio/gpio" ,pin "/direction") :direction :output :if-exists :overwrite)
+      (format ,in "~A" 
+        (cond
+          ((eql 'OUT ',mode) "out")
+          ((eql 'IN ',mode) "in")
+          (t (format t "您输入的参数不对，请重新输入out或in")))))))
+
+
+(defmacro 写引脚 (pin value)
+  (let ((in (gensym)))
+    `(with-open-file (,in (format nil "~a~a~a" "/sys/class/gpio/gpio" ,pin "/value") :direction :output :if-exists :overwrite)
+      (format ,in "~A" ,value))))
+
+
+(defmacro 关引脚 (pin)
+  (let ((in (gensym)))
+    `(with-open-file (,in "/sys/class/gpio/unexport" :direction :output :if-exists :overwrite)
+      (format ,in "~A" ,pin))))
+
+
+(defmacro 读引脚 (pin)
+  (let ((in (gensym)))
+    `(with-open-file (,in (format nil "~a~a~a" "/sys/class/gpio/gpio" ,pin "/value") :if-does-not-exist nil)
+      (read ,in))))
+
+
+wget命令说明
+启动参数编辑
+这一类参数主要提供软件的一些基本信息。
+-V,--version 显示软件版本号然后退出；
+-h,--help显示软件帮助信息；
+-e,--execute=COMMAND 执行一个 “.wgetrc”命令
+以上每一个功能有长短两个参数，长短功能一样，都可以使用。需要注意的是，这里的-e参数是执行一个.wgettrc的命令，.wgettrc命令其实是一个参数列表，直接将软件需要的参数写在一起就可以了。
+文件参数编辑
+这类参数定义软件log文件的输出方式等。
+-o,--output-file=FILE 将软件输出信息保存到文件；
+-a,--append-output=FILE将软件输出信息追加到文件；
+-d,--debug显示输出信息；
+-q,--quiet 不显示输出信息；
+-i,--input-file=FILE 从文件中取得URL；
+例1：下载首页并且显示下载信息
+wget -d
+例2：下载首页并且不显示任何信息
+wget -q
+例3：下载filelist.txt中所包含的链接的所有文件
+wget -i filelist.txt
+wget -np -m -l 5 不下载本站所链接的其它站点内容，5级目录结构
+下载参数编辑
+下载参数定义下载重复次数、保存文件名等。
+-t,--tries=NUMBER 是否下载次数（0表示无穷次）
+-O --output-document=FILE 指定下载目录和文件名
+-nc, --no-clobber 不要覆盖已经存在的文件
+-N,--timestamping只下载比本地新的文件
+-T,--timeout=SECONDS 设置超时时间
+-Y,--proxy=on/off 关闭代理
+例：下载的首页并将下载过程中的的输入信息保存到test.htm文件中
+wget -Otest.html
+目录参数
+目录参数主要设置下载文件保存目录与原来文件（服务器文件）的目录对应关系；
+-nd --no-directories 不建立目录
+-x,--force-directories 强制建立目录
+可能我们对这里的目录还不是很了解，我们来看一个举例
+例：下载的首页，并且保持网站结构
+wget -x
+HTTP参数
+HTTP参数设置一些与HTTP下载有关的属性。
+--http-user=USER设置HTTP用户
+--http-passwd=PASS设置HTTP密码
+--proxy-user=USER设置代理用户
+--proxy-passwd=PASS设置代理密码
+以上参数主要设置HTTP和代理的用户、密码；
+递归参数设置
+在下载一个网站或者网站的一个目录的时候，我们需要知道的下载的层次，这些参数就可以设置。
+-r,--recursive 下载整个网站、目录（小心使用）
+-l,--level=NUMBER 下载层次
+例：下载整个网站
+wget -r
+拒绝选项参数
+下载一个网站的时候，为了尽量快，有些文件可以选择下载，比如图片和声音，在这里可以设置。
+-A,--accept=LIST 可以接受的文件类型
+-R,--reject=LIST拒绝接受的文件类型
+-D,--domains=LIST可以接受的域名,用逗号分隔
+--exclude-domains=LIST拒绝的域名,用逗号分隔
+-L,--relative 下载关联链接
+--follow-ftp 只下载FTP链接
+-H,--span-hosts 可以下载外面的主机
+-I,--include-directories=LIST允许的目录
+-X,--exclude-directories=LIST 拒绝的目录
+
+
+git clone https://github.com/NVIDIA/jetson-gpio.git
+cd jetson-gpio && git pull
+sudo python3 setup.py install
+
+
+
+# 安装chez-scheme
+cd ~
+wget https://codeload.github.com/cisco/ChezScheme/zip/master
+mv master chez-scheme.zip
+
+# 安装依赖
+sudo apt install unzip
+sudo apt install zip
+sudo apt install uuid-dev
+sudo apt install libncurses5-dev
+sudo apt install libx11-dev
+
+# 开始安装
+unzip chez-scheme.zip
+cd ChezScheme-master/
+sudo ./configure
+sudo make -j 8
+sudo make install
+# 安装chez-scheme完成回到用户目录
+cd ~
+
+# 安装common-lisp开发环境完成
+sudo apt install m4
+# 安装ccl lisp
+wget https://github.com/Clozure/ccl/releases/download/v1.12-dev.1/linuxarm.tar.gz
+mkdir ccl-1.2
+cd ccl-1.2/
+cp ../linuxarm.tar.gz ./
+tar -zxvf linuxarm.tar.gz
+rm linuxarm.tar.gz
+cd ../
+
+wget -c https://github.com/Clozure/ccl/releases/download/v1.11.5/ccl-1.11.5-linuxarm.tar.gz
+tar -zxvf ccl-1.11.5-linuxarm.tar.gz
+
+
+
+
+# 下载源码
+wget https://codeload.github.com/Clozure/ccl/zip/master
+mv master ccl-lisp.zip
+unzip ccl-lisp.zip
+cd ccl-master/
+cp ../ccl/armcl.image ./
+cp ../ccl/armcl ./
+cp -rf ../ccl/arm-headers/ ./
+cd lisp-kernel/linuxarm/
+make
+cd ../../
+./armcl
+(ccl:rebuild-ccl :full t)
+(quit)
+./armcl
+(ccl:rebuild-ccl :full t)
+(quit)
+./armcl
+(ccl:rebuild-ccl :full t)
+
+
+
+
+lisp各版本源码下载
+
+scheme
+git clone https://github.com/cisco/ChezScheme.git
+
+ccl lisp
+git clone https://github.com/Clozure/ccl.git
+
+sbcl
+git clone https://git.code.sf.net/p/sbcl/sbcl
+git clone git://git.code.sf.net/p/sbcl/sbcl.git
+
+可移植的路径名库
+git clone https://github.com/edicl/cl-fad.git
+
+正则表达式库
+git clone https://github.com/edicl/cl-ppcre.git
+
+Common Lisp的可移植Unicode库
+git clone https://github.com/edicl/cl-unicode.git
+
+on lisp
+git clone https://github.com/xcv58/onlisp-cn.git
+
+
+https://github.com/binghe/pcl-cn.git
+https://github.com/binghe/informatica-public.git
+https://github.com/binghe/HOL.git
+https://github.com/binghe/acrobat-actions.git
+https://github.com/binghe/cl-net-snmp.git
+https://github.com/usocket/usocket.git
+https://github.com/binghe/kamasutra-cn.git
+
+
+
+https://github.com/dita-ot/dita-ot.git
+
+brew install dita-ot
+sudo apt-get install default-jre
+sudo apt-get install default-jdk
+
+git clone git://github.com/dita-ot/dita-ot.git
+cd dita-ot
+git submodule update --init --recursive
+git pull
+autoreconf -vif
+sudo ./gradlew
+sudo ./gradlew dist
+
+sudo gedit ~/.bashrc
+export PATH=/home/jetbot/git/binghe/dita-ot-3.3.4/bin:$PATH
+source ~/.bashrc
+
+
+
+https://www.jianshu.com/p/89702b13bc51
+http://www.hboehm.info/gc/
+要构建收集器的工作版本，您需要执行以下操作，其中D是安装目录的绝对路径：
+cd git
+git clone git://github.com/ivmai/bdwgc.git
+cd bdwgc && git pull
+git clone git://github.com/ivmai/libatomic_ops.git
+cd libatomic_ops && git pull
+autoreconf -vif
+automake --add-missing
+./configure && make -j4 && sudo make install
+这将要求您已经安装了C和C ++工具链，git， automake，autoconf和libtool。
+
+
+
+
+
+
+
+
+
+
+
+
+先检查已安装版本，相同就不装了用-V或--v
+cd libnice-linux编译
+
+安装m4
+m4 --version
+
+m4源码下载
+git clone git://git.sv.gnu.org/m4
+git clone http://git.savannah.gnu.org/r/m4.git
+cd m4 && git pull
+
+# aclocal
+# autoconf
+# autoheader
+# automake --add-missing
+
+在有configure.ac文件时运行
+autoreconf  -ivf
+
+wget http://mirrors.kernel.org/gnu/m4/m4-1.4.18.tar.gz
+tar -xzvf m4-1.4.18.tar.gz
+cd m4-1.4.18
+sudo ./configure
+sudo make -j 4
+sudo make install
+
+
+
+
+安装autoconf
+git clone http://git.savannah.gnu.org/r/autoconf.git
+git clone git://git.sv.gnu.org/autoconf
+git clone http://git.sv.gnu.org/r/autoconf.git
+cd autoconf && git pull
+autoreconf  -ivf && ./configure && make -j4 && sudo make install && cd ..
+
+wget http://mirrors.kernel.org/gnu/autoconf/autoconf-latest.tar.gz
+tar -xzvf autoconf-latest.tar.gz
+cd autoconf-2.69/
+sudo ./configure
+sudo make -j 4
+sudo make install
+
+
+
+安装automake
+sudo apt remove automake
+git clone https://git.savannah.gnu.org/git/automake.git
+cd automake && git pull
+autoreconf  -ivf && ./configure && make -j4 && sudo make install && cd ..
+
+
+wget http://mirrors.kernel.org/gnu/automake/automake-1.16.1.tar.gz
+tar -xzvf automake-1.16.1.tar.gz
+cd automake-1.16.1/
+sudo ./configure
+sudo make -j 4
+sudo make install
+关闭窗口重新打开
+automake --version
+
+
+
+安装libtool
+wget http://mirrors.kernel.org/gnu/libtool/libtool-2.4.6.tar.gz
+tar -xzvf libtool-2.4.6.tar.gz
+cd libtool-2.4.6/
+sudo ./configure
+sudo make -j 4
+sudo make install
+
+
+
+sudo apt install libtasn1-6 libtasn1-6-dev libtasn1-bin
+libjpeg-turbo源码编译、安装
+libjpeg-turbo是libjpeg的一个复刻，它采用单指令流多数据流（SIMD）指令来加速JPEG编码和解码基础效率。许多项目现在使用libjpeg-turbo而不是libjpeg。
+libjpeg-turbo源码下载，官方网址：https://libjpeg-turbo.org/，从官方主页列出的GitHub地址：https://github.com/libjpeg-turbo/libjpeg-turbo里的release标签页选择版本进行下载。
+
+git clone https://github.com/libjpeg-turbo/libjpeg-turbo.git
+cd libjpeg-turbo && git pull
+cmake -G"Unix Makefiles"
+sudo make -j 4
+sudo make install
+
+
+mkdir gmp-mpfr-mpc
+cd gmp-mpfr-mpc/
+
+wget ftp://ftp.gnu.org/gnu/gmp/gmp-6.1.2.tar.xz
+wget http://www.mpfr.org/mpfr-current/mpfr-4.0.2.tar.gz
+wget https://ftp.gnu.org/gnu/mpc/mpc-1.1.0.tar.gz
+xz -d gmp-6.1.2.tar.xz
+tar -zxvf mpc-1.1.0.tar.gz
+tar -zxvf mpfr-4.0.2.tar.gz
+tar -xvf gmp-6.1.2.tar
+
+# a、安装GMP
+cd gmp-6.1.2
+sudo ./configure  --enable-cxx
+sudo make -j 4
+# sudo make check  //校验，不用执行
+sudo make install
+
+# b、安装MPFR
+cd ../mpfr-4.0.2
+sudo ./configure --with-gmp=/usr/local/lib
+sudo make -j 4
+sudo make install
+
+# c、安装MPC
+cd ../mpc-1.1.0
+sudo ./configure --with-gmp=/usr/local/lib --with-mpfr=/usr/local/lib
+sudo make -j 4
+sudo make install
+
+# 用下面方法【对所有用户永久生效】
+sudo gedit /etc/ld.so.conf
+# 将下面内容填入
+/usr/local/lib
+# 退出执行
+sudo ldconfig
+
+
+
+wget -c http://mirror.sergal.org/gnu/wget/wget2-1.99.2.tar.gz
+tar -zxvf wget2-1.99.2.tar.gz
+cd wget2-1.99.2/
+sudo apt remove wget
+./configure && make -j4 && sudo make install
+
+which wget2
+sudo ln -s /usr/local/bin/wget2 /usr/local/bin/wget
+
+
+
+
+编译参考  可删除
+https://blog.csdn.net/jbl5501328/article/details/82563434
+
+libnice linux编译流程
+
+sudo apt install libtool libsysfs-dev libsysfs2 autoconf automaken gcj-jdk
+sudo -H pip3 install -U pkgconfig
+sudo apt install gtk-doc-tools
+sudo apt install libffi-dev
+sudo apt install ninja-build
+sudo apt install libjdependency-java
+sudo apt install libmount-dev
+sudo apt remove nettle-dev
+sudo -H pip3 install -U meson
+sudo cp -rf /usr/share/aclocal/*.m4 /usr/local/share/aclocal/
+
+wget -c https://sourceforge.net/projects/pcre/files/pcre/8.43/pcre-8.43.zip
+unzip pcre-8.43.zip
+cd pcre-8.43 && ./configure --enable-utf8 --enable-unicode-properties
+sudo make clean && make -j4 && sudo make install && cd ..
+
+wget -c https://nchc.dl.sourceforge.net/project/libpng/zlib/1.2.11/zlib-1.2.11.tar.gz
+tar -zxvf zlib-1.2.11.tar.gz
+cd zlib-1.2.11 && ./configure && sudo make clean && make -j4 && sudo make install && cd ..
+
+wget -c http://ftp.gnome.org/pub/gnome/sources/glib/2.62/glib-2.62.0.tar.xz
+tar -xvf glib-2.62.0.tar.xz
+cd glib-2.62.0 && meson _build && ninja -C _build && sudo ninja -C _build install && cd ..
+
+wget -c https://ftp.gnu.org/gnu/nettle/nettle-3.5.1.tar.gz
+tar -zxvf nettle-3.5.1.tar.gz
+cd nettle-3.5.1 && ./configure --prefix=/usr --disable-openssl --enable-shared --enable-mini-gmp
+sudo make clean && make -j4 && sudo make install && cd ..
+如果
+pkg-config --modversion nettle
+3.5.1
+没有更新版本
+则
+locate nettle.pc
+搜索位置，用下面方式
+sudo mv /usr/lib/pkgconfig/nettle.pc /usr/lib/pkgconfig/nettle.pc.bak
+sudo ln -s /usr/lib/aarch64-linux-gnu/pkgconfig/nettle.pc /usr/lib/pkgconfig/nettle.pc
+
+
+wget ftp://ftp.gnu.org/gnu/libtasn1/libtasn1-4.14.tar.gz
+tar -zxvf libtasn1-4.14.tar.gz
+cd libtasn1-4.14 && ./configure && sudo make clean && make -j4 && sudo make install && cd ..
+
+wget https://github.com/p11-glue/p11-kit/archive/0.23.10.tar.gz
+git clone https://github.com/p11-glue/p11-kit.git
+cd p11-kit && git pull && ./configure && sudo make clean && make -j4 && sudo make install && cd ..
+
+
+
+
+# 报错失败
+Uncaught exception:
+Throw to key misc-error with args ("primitive-load-path" "Unable to find file ~S in load path" ("ice-9/boot-9") #f)
+
+
+
+# 错误失败
+wget -c https://www.gnupg.org/ftp/gcrypt/gnutls/v3.6/gnutls-3.6.10.tar.xz
+xz -d gnutls-3.6.10.tar.xz && tar -xvf gnutls-3.6.10.tar
+cd gnutls-3.6.10 && ./configure --prefix=/usr --disable-openssl --enable-shared --enable-mini-gmp
+sudo make clean && make -j4 && sudo make install && cd ..
+
+
+
+# 报错失败
+# sudo apt install guile-2.2
+https://www.gnu.org/software/guile/download/
+git clone git://git.sv.gnu.org/guile.git
+cd guile && git pull && autoreconf -ivf
+./configure && sudo make clean && make -j4 && sudo make install && cd ..
+
+wget -c ftp://ftp.gnu.org/gnu/guile/guile-2.2.6.tar.xz
+xz -dk guile-2.2.6.tar.xz
+tar -xvf guile-2.2.6.tar
+cd guile-2.2.6 && ./configure && sudo make clean && make -j4 && sudo make install && cd ..
+
+
+
+在有configure.ac文件时运行
+git clone https://gitlab.freedesktop.org/libnice/libnice.git
+cd libnice && git pull && autoreconf -ivf && sudo ./autogen.sh && sudo make clean && make -j4 && sudo make install && cd ..
+
+
+wget http://ftp.gnu.org/gnu/autogen/rel5.18.16/autogen-5.18.16.tar.gz
+tar -xzvf autogen-5.18.16.tar.gz
+cd autogen-5.18.16 && sudo ./configure --prefix=/usr/local/
+sudo make clean && make -j4 && sudo make install && cd ..
+
+
+
+
+
+
+jetson nano 供电模式及其切换或自定义
+2019-06-04 19:39:42 injoker_ 阅读数 886更多
+分类专栏： NVIDIA Jetson nano
+版权声明：本文为博主原创文章，遵循 CC 4.0 BY-SA 版权协议，转载请附上原文出处链接和本声明。
+本文链接：https://blog.csdn.net/liam_dapaitou/article/details/90810849
+写在前面
+jetson nano 开发板在预设的10W(MAXN)模式下需要用5v4A的DC供电。
+用5v2A的DC或者micro-usb供电建议使用5W模式。
+供电不足会导致掉电关机。
+
+以下是学习jetson nano时，对供电模式的文档的翻译。
+
+nvidia原文：https://docs.nvidia.com/jetson/l4t/index.html#page/Tegra%2520Linux%2520Driver%2520Package%2520Development%2520Guide%2Fpower_management_nano.html%23wwpID0E0YI0HA
+
+供电模式
+Jetson Nano采用高效电源管理集成电路（PMIC），稳压器和电源树设计可优化电源效率。 它支持两种电源模式，例如5W和MaxN（10W）。 每种模式允许多种配置，具有各种CPU频率和在线核心数。
+您可以通过以预限定值限制内存，CPU和GPU频率以及内核数量，将模块限制为预定义配置。
+下表显示了NVIDIA预定义的电源模式以及模块资源使用的相关上限。
+
+Mode Name	MaxN	5WPower Budget	10W	5WMode ID	0	1Online CPU	4	2CPU Maximal Frequency (MHz)	1479	918GPU TPC	1	1GPU Maximal Frequency (MHz)	921.6	640Memory Maximal Frequency (MHz)	1600	1600
+默认的模式是：MaxN（10W）(对应ID 0).
+
+切换模式：
+•输入命令:
+
+$ sudo /usr/sbin/nvpmodel -m <x>
+
+其中<x>对应的是 mode ID, 比如 0 或 1。
+设置电源模式后，模块将保持该模式，直到您进行更改。 该模式在电源循环和SC7之间持续存在。
+
+显示当前的电源模式：
+•输入命令：
+
+$ sudo /usr/sbin/nvpmodel -q
+
+了解其他选项：
+•输入命令：
+
+$ /usr/sbin/nvpmodel -h
+
+定义自定义模式：
+•要定义自己的自定义模式，请将模式定义添加到文件中：
+
+<top>/l4t/release/rfs/etc/nvpmodel/nvpmodel_t210_jetson-nano.conf
+
+这是模式1的示例：
+
+< POWER_MODEL ID=1 NAME=5W >
+	CPU_ONLINE CORE_0 1
+	CPU_ONLINE CORE_1 1
+	CPU_ONLINE CORE_2 0
+	CPU_ONLINE CORE_3 0
+	CPU_A57 MIN_FREQ 0
+	CPU_A57 MAX_FREQ 918000
+	GPU_POWER_CONTROL_ENABLE GPU_PWR_CNTL_EN on
+	GPU MIN_FREQ 0
+	GPU MAX_FREQ 640000000
+	GPU_POWER_CONTROL_DISABLE GPU_PWR_CNTL_DIS auto
+	EMC MAX_FREQ 1600000000
+
+CPU的频率单位是千赫兹（KHz）。 GPU和EMMC的单位是赫兹（Hz）。 您必须在ID字段中为每个自定义模式分配唯一ID。
+测试您的自定义模式以确定：
+•要使用的活动核心数
+•为GPU，EMC和每个CPU群集设置的频率
+您设置的频率受模式0中定义的MaxN限制的约束。
+
+jetson_clocks脚本
+默认情况下，DVFS已启用，CPU / GPU / EMC时钟将根据负载而变化。
+/usr/bin/jetson_clocks：是禁用DVFS并将CPU / GPU / EMC时钟设置为最大值的脚本。
+
+
+
+sudo apt-get install ros-melodic-uvc-camera ros-melodic-image-view ros-melodic-rqt-image-view
+$ sudo apt-get install git-core
+$ mkdir -p ~/catkin_ws/src
+$ cd ~/catkin_ws/src
+$ git clone https://github.com/ericperko/uvc_cam.git
+$ rosmake uvc_cam
+roslaunch rbx1_vision uvc_cam.launch device:=/dev/video0
+rosrun image_view image_view image:=/camera/rgb/image_color
+
+
+
+对所有用户有效在/etc/profile增加以下内容。source /etc/profile 重新执行修改的初始化文件/etc/profile，使只立即生效，而不必注销并重新登录。
+
+只对当前用户有效在Home目录下的.bashrc或.bash_profile里增加下面的内容：source .bashrc
+
+(注意：等号前面不要加空格,否则可能出现 command not found)
+
+
+#在PATH中找到可执行文件程序的路径。
+export PATH =$PATH:$HOME/bin
+
+#gcc找到头文件的路径
+C_INCLUDE_PATH=/usr/include/libxml2:/MyLib
+export C_INCLUDE_PATH
+
+#g++找到头文件的路径
+CPLUS_INCLUDE_PATH=$CPLUS_INCLUDE_PATH:/usr/include/libxml2:/MyLib
+export CPLUS_INCLUDE_PATH
+
+#找到动态链接库的路径
+LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/MyLib
+export LD_LIBRARY_PATH
+
+#找到静态库的路径
+LIBRARY_PATH=$LIBRARY_PATH:/MyLib
+export LIBRARY_PATH
+
